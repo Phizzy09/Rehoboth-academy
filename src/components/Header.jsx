@@ -1,4 +1,6 @@
+import { useState } from "react";
 import useStore from "../store/useStore";
+import FirebaseStatusModal from "./FirebaseStatusModal";
 
 const siteLinks = [
   { name: "Home", page: "home" },
@@ -29,6 +31,8 @@ export default function Header({ kind, active }) {
   const logout = useStore((state) => state.logout);
   const user = useStore((state) => state.user);
   const students = useStore((state) => state.students);
+  const firebaseStatus = useStore((state) => state.firebaseStatus);
+  const [showFirebaseModal, setShowFirebaseModal] = useState(false);
 
   const go = (e, page) => {
     e.preventDefault();
@@ -46,7 +50,38 @@ export default function Header({ kind, active }) {
             </a>
           ))}
         </nav>
-        <a className="btn o" href="#" onClick={(e) => go(e, "login")}>Portal sign in (Staff / Student)</a>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <button
+            type="button"
+            onClick={() => setShowFirebaseModal(true)}
+            title="Click to check Firebase Cloud connection & rules"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "5px",
+              fontSize: "12px",
+              fontWeight: 700,
+              padding: "4px 10px",
+              borderRadius: "99px",
+              background: firebaseStatus === "connected" ? "#f0fdf4" : firebaseStatus === "permission-denied" ? "#fef2f2" : "#fff7ed",
+              color: firebaseStatus === "connected" ? "#16a34a" : firebaseStatus === "permission-denied" ? "#dc2626" : "#ea580c",
+              border: `1px solid ${firebaseStatus === "connected" ? "#86efac" : firebaseStatus === "permission-denied" ? "#fca5a5" : "#fed7aa"}`,
+              cursor: "pointer",
+            }}
+          >
+            <span
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                background: firebaseStatus === "connected" ? "#16a34a" : firebaseStatus === "permission-denied" ? "#dc2626" : "#ea580c",
+              }}
+            />
+            {firebaseStatus === "connected" ? "✓ Firebase Live" : firebaseStatus === "permission-denied" ? "⚠️ Firebase Blocked" : "🔥 Firebase"}
+          </button>
+          <a className="btn o" href="#" onClick={(e) => go(e, "login")}>Portal sign in (Staff / Student)</a>
+        </div>
+        {showFirebaseModal && <FirebaseStatusModal onClose={() => setShowFirebaseModal(false)} />}
       </header>
     );
   }
@@ -75,27 +110,38 @@ export default function Header({ kind, active }) {
         ))}
       </nav>
       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-        <span
-          title="Connected to Firebase Cloud Firestore"
+        <button
+          type="button"
+          onClick={() => setShowFirebaseModal(true)}
+          title="Click to check Firebase Cloud connection & rules"
           style={{
             display: "inline-flex",
             alignItems: "center",
             gap: "5px",
             fontSize: "12px",
             fontWeight: 700,
-            padding: "3px 10px",
+            padding: "4px 10px",
             borderRadius: "99px",
-            background: "#fff7ed",
-            color: "#c2410c",
-            border: "1px solid #fed7aa",
+            background: firebaseStatus === "connected" ? "#f0fdf4" : firebaseStatus === "permission-denied" ? "#fef2f2" : "#fff7ed",
+            color: firebaseStatus === "connected" ? "#16a34a" : firebaseStatus === "permission-denied" ? "#dc2626" : "#ea580c",
+            border: `1px solid ${firebaseStatus === "connected" ? "#86efac" : firebaseStatus === "permission-denied" ? "#fca5a5" : "#fed7aa"}`,
+            cursor: "pointer",
           }}
         >
-          <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#f97316" }} />
-          🔥 Firebase
-        </span>
+          <span
+            style={{
+              width: 7,
+              height: 7,
+              borderRadius: "50%",
+              background: firebaseStatus === "connected" ? "#16a34a" : firebaseStatus === "permission-denied" ? "#dc2626" : "#ea580c",
+            }}
+          />
+          {firebaseStatus === "connected" ? "✓ Firebase Live" : firebaseStatus === "permission-denied" ? "⚠️ Firebase Blocked" : "🔥 Firebase"}
+        </button>
         <span style={chipStyle}>{chipText}</span>
       </div>
       <a className="btn o" href="#" onClick={(e) => { e.preventDefault(); logout(); }}>Log out</a>
+      {showFirebaseModal && <FirebaseStatusModal onClose={() => setShowFirebaseModal(false)} />}
     </header>
   );
 }

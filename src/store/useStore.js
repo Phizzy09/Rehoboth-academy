@@ -70,10 +70,13 @@ const useStore = create((set, get) => ({
   emailDispatches: [],
   latestDispatch: null, // Used for displaying instant credential dispatch alert
   released: false, // students see results only after the school releases them
+  firebaseStatus: "connecting", // "connected" | "permission-denied" | "connecting" | "error"
+  firebaseError: "",
 
   // ---- things we can do ----
   setPage: (page) => set({ page: page }),
   clearLatestDispatch: () => set({ latestDispatch: null }),
+  retryFirebaseSync: () => initFirebaseSync(set, get),
 
   login: (id, password) =>
     set((state) => {
@@ -164,7 +167,8 @@ const useStore = create((set, get) => ({
     }),
 
   // A student pays from their own portal (partial or full).
-  pay: (id, amount) =>
+  // method defaults to "Transfer"; pass "Paystack" + txRef for online payments.
+  pay: (id, amount, method = "Transfer", txRef = "") =>
     set((state) => {
       const student = state.students.find((s) => s.id === id);
       if (!student) return {};
@@ -175,7 +179,7 @@ const useStore = create((set, get) => ({
       const newPaid = student.paid + paymentAmount;
       const date = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" });
       const updatedStudent = { ...student, paid: newPaid };
-      const paymentObj = { id: Date.now(), studentId: id, date, method: "Transfer", amount: paymentAmount };
+      const paymentObj = { id: Date.now(), studentId: id, date, method, ref: txRef, amount: paymentAmount };
 
       fbSaveStudent(updatedStudent);
       fbSavePayment(paymentObj);

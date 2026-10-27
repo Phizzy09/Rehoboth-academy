@@ -26,7 +26,8 @@ export const fbSaveApplication = async (app) => {
     await setDoc(ref, { ...app, updatedAt: new Date().toISOString() }, { merge: true });
     console.log("✓ Saved application to Firebase:", app.id);
   } catch (err) {
-    console.warn("Firebase save application error (using local state):", err.message);
+    console.warn("Firebase save application error:", err.code || err.message);
+    throw err;
   }
 };
 
@@ -36,7 +37,7 @@ export const fbUpdateApplication = async (id, updates) => {
     await updateDoc(ref, { ...updates, updatedAt: new Date().toISOString() });
     console.log("✓ Updated application in Firebase:", id);
   } catch (err) {
-    console.warn("Firebase update application error:", err.message);
+    console.warn("Firebase update application error:", err.code || err.message);
   }
 };
 
@@ -46,7 +47,7 @@ export const fbDeleteApplication = async (id) => {
     await deleteDoc(ref);
     console.log("✓ Deleted application from Firebase:", id);
   } catch (err) {
-    console.warn("Firebase delete application error:", err.message);
+    console.warn("Firebase delete application error:", err.code || err.message);
   }
 };
 
@@ -57,7 +58,7 @@ export const fbSaveStudent = async (student) => {
     await setDoc(ref, { ...student, updatedAt: new Date().toISOString() }, { merge: true });
     console.log("✓ Saved student to Firebase:", student.id);
   } catch (err) {
-    console.warn("Firebase save student error:", err.message);
+    console.warn("Firebase save student error:", err.code || err.message);
   }
 };
 
@@ -66,7 +67,7 @@ export const fbUpdateStudent = async (studentId, updates) => {
     const ref = doc(db, STUDENTS_COL, studentId);
     await updateDoc(ref, { ...updates, updatedAt: new Date().toISOString() });
   } catch (err) {
-    console.warn("Firebase update student error:", err.message);
+    console.warn("Firebase update student error:", err.code || err.message);
   }
 };
 
@@ -77,7 +78,7 @@ export const fbSaveScore = async (studentId, subject, ca, exam) => {
     const ref = doc(db, RESULTS_COL, docId);
     await setDoc(ref, { studentId, subject, ca, exam, updatedAt: new Date().toISOString() }, { merge: true });
   } catch (err) {
-    console.warn("Firebase save score error:", err.message);
+    console.warn("Firebase save score error:", err.code || err.message);
   }
 };
 
@@ -91,7 +92,7 @@ export const fbBulkSaveScores = async (scoreRows) => {
     await Promise.all(promises);
     console.log(`✓ Bulk saved ${scoreRows.length} scores to Firebase`);
   } catch (err) {
-    console.warn("Firebase bulk save scores error:", err.message);
+    console.warn("Firebase bulk save scores error:", err.code || err.message);
   }
 };
 
@@ -100,7 +101,7 @@ export const fbSaveReleaseStatus = async (released) => {
     const ref = doc(db, SETTINGS_COL, "resultsRelease");
     await setDoc(ref, { released, updatedAt: new Date().toISOString() }, { merge: true });
   } catch (err) {
-    console.warn("Firebase save release status error:", err.message);
+    console.warn("Firebase save release status error:", err.code || err.message);
   }
 };
 
@@ -111,7 +112,7 @@ export const fbSavePayment = async (payment) => {
     await setDoc(ref, { ...payment, createdAt: new Date().toISOString() });
     console.log("✓ Saved payment record to Firebase:", payment.id);
   } catch (err) {
-    console.warn("Firebase save payment error:", err.message);
+    console.warn("Firebase save payment error:", err.code || err.message);
   }
 };
 
@@ -122,7 +123,7 @@ export const fbSaveNotice = async (notice) => {
     await setDoc(ref, { ...notice, createdAt: new Date().toISOString() });
     console.log("✓ Saved broadcast notice to Firebase:", notice.id);
   } catch (err) {
-    console.warn("Firebase save notice error:", err.message);
+    console.warn("Firebase save notice error:", err.code || err.message);
   }
 };
 
@@ -133,21 +134,80 @@ export const fbSaveEmailDispatch = async (dispatch) => {
     await setDoc(ref, { ...dispatch, createdAt: new Date().toISOString() });
     console.log("✓ Saved email dispatch record to Firebase:", dispatch.id);
   } catch (err) {
-    console.warn("Firebase save email dispatch error:", err.message);
+    console.warn("Firebase save email dispatch error:", err.code || err.message);
   }
 };
 
-// ─── 7. Seed Initial Data & Live Sync ─────────────────────────
+// ─── 7. Direct Seed All Demo Data to Firebase ─────────────────
+export const fbSeedAllData = async () => {
+  console.log("Starting full database seed to Firebase Firestore...");
+  // 1. Applications
+  for (const app of initialApplications) {
+    await setDoc(doc(db, APPS_COL, app.id), { ...app, updatedAt: new Date().toISOString() });
+  }
+  // 2. Students
+  for (const st of defaultStudents) {
+    await setDoc(doc(db, STUDENTS_COL, st.id), { ...st, updatedAt: new Date().toISOString() });
+  }
+  // 3. Results
+  for (const r of defaultResults) {
+    const docId = `${r.studentId}_${r.subject.replace(/[^a-zA-Z0-9]/g, "_")}`;
+    await setDoc(doc(db, RESULTS_COL, docId), { ...r, updatedAt: new Date().toISOString() });
+  }
+  // 4. Notices
+  for (const n of defaultNotices) {
+    await setDoc(doc(db, NOTICES_COL, String(n.id)), { ...n, createdAt: new Date().toISOString() });
+  }
+  // 5. Payments
+  for (const p of defaultPayments) {
+    await setDoc(doc(db, PAYMENTS_COL, String(p.id)), { ...p, createdAt: new Date().toISOString() });
+  }
+  // 6. Settings
+  await setDoc(doc(db, SETTINGS_COL, "resultsRelease"), { released: false, updatedAt: new Date().toISOString() });
+  console.log("✓ Full database seed to Firebase Firestore complete!");
+  return true;
+};
+
+// ─── 8. Seed Initial Data & Live Sync ─────────────────────────
 export const initFirebaseSync = async (set, get) => {
+  set({ firebaseStatus: "connecting" });
+
   try {
+    // Test write/read permissions
+    const testDocRef = doc(db, SETTINGS_COL, "healthCheck");
+    await setDoc(testDocRef, { lastPing: new Date().toISOString(), app: "Rehoboth Academy" }, { merge: true })
+      .then(() => {
+        set({ firebaseStatus: "connected", firebaseError: "" });
+        console.log("🔥 Firebase Firestore connection VERIFIED!");
+      })
+      .catch((err) => {
+        if (err.code === "permission-denied" || err.message?.includes("permissions")) {
+          set({
+            firebaseStatus: "permission-denied",
+            firebaseError: "Cloud Firestore Security Rules are blocking access (Missing or insufficient permissions).",
+          });
+          console.error("🔥 Firebase Firestore Permission Denied! Update your Firestore rules in Firebase Console.");
+        } else {
+          set({
+            firebaseStatus: "error",
+            firebaseError: err.message,
+          });
+        }
+      });
+
     // A. Sync Applications
-    const appsSnap = await getDocs(collection(db, APPS_COL)).catch(() => null);
+    const appsSnap = await getDocs(collection(db, APPS_COL)).catch((err) => {
+      if (err.code === "permission-denied") {
+        set({ firebaseStatus: "permission-denied", firebaseError: "Permission Denied: Update Firestore Security Rules in Firebase Console." });
+      }
+      return null;
+    });
+
     if (appsSnap && !appsSnap.empty) {
       const fbApps = appsSnap.docs.map((d) => d.data());
       set({ applications: fbApps });
       console.log(`✓ Loaded ${fbApps.length} applications from Firebase`);
     } else if (appsSnap && appsSnap.empty) {
-      // Seed default applications to Firebase so user's console isn't blank
       console.log("Seeding initial applications to Firebase...");
       initialApplications.forEach((app) => fbSaveApplication(app));
     }
@@ -156,49 +216,54 @@ export const initFirebaseSync = async (set, get) => {
     onSnapshot(collection(db, APPS_COL), (snapshot) => {
       if (!snapshot.empty) {
         const liveApps = snapshot.docs.map((d) => d.data());
-        // Sort descending by date/id
         liveApps.sort((a, b) => (b.id > a.id ? 1 : -1));
-        set({ applications: liveApps });
+        set({ applications: liveApps, firebaseStatus: "connected" });
       }
-    }, (err) => console.warn("Live applications listener warning:", err.message));
+    }, (err) => {
+      if (err.code === "permission-denied") {
+        set({ firebaseStatus: "permission-denied" });
+      }
+    });
 
     // B. Sync Students
     const studentsSnap = await getDocs(collection(db, STUDENTS_COL)).catch(() => null);
     if (studentsSnap && !studentsSnap.empty) {
       const fbStudents = studentsSnap.docs.map((d) => d.data());
       set({ students: fbStudents });
-      console.log(`✓ Loaded ${fbStudents.length} students from Firebase`);
     } else if (studentsSnap && studentsSnap.empty) {
-      console.log("Seeding initial students to Firebase...");
       defaultStudents.forEach((st) => fbSaveStudent(st));
     }
 
-    // Live listener for Students
     onSnapshot(collection(db, STUDENTS_COL), (snapshot) => {
       if (!snapshot.empty) {
         const liveStudents = snapshot.docs.map((d) => d.data());
-        set({ students: liveStudents });
+        set({ students: liveStudents, firebaseStatus: "connected" });
       }
-    }, (err) => console.warn("Live students listener warning:", err.message));
+    }, (err) => {
+      if (err.code === "permission-denied") {
+        set({ firebaseStatus: "permission-denied" });
+      }
+    });
 
-    // C. Sync Results / Scores
+    // C. Sync Results
     const resultsSnap = await getDocs(collection(db, RESULTS_COL)).catch(() => null);
     if (resultsSnap && !resultsSnap.empty) {
       const fbResults = resultsSnap.docs.map((d) => d.data());
       set({ results: fbResults });
-      console.log(`✓ Loaded ${fbResults.length} score entries from Firebase`);
     } else if (resultsSnap && resultsSnap.empty) {
-      console.log("Seeding initial exam scores to Firebase...");
       defaultResults.forEach((r) => fbSaveScore(r.studentId, r.subject, r.ca, r.exam));
     }
 
-    // Live listener for Results
     onSnapshot(collection(db, RESULTS_COL), (snapshot) => {
       if (!snapshot.empty) {
         const liveResults = snapshot.docs.map((d) => d.data());
-        set({ results: liveResults });
+        set({ results: liveResults, firebaseStatus: "connected" });
       }
-    }, (err) => console.warn("Live results listener warning:", err.message));
+    }, (err) => {
+      if (err.code === "permission-denied") {
+        set({ firebaseStatus: "permission-denied" });
+      }
+    });
 
     // D. Release status
     onSnapshot(doc(db, SETTINGS_COL, "resultsRelease"), (snapshot) => {
@@ -208,25 +273,23 @@ export const initFirebaseSync = async (set, get) => {
           set({ released: data.released });
         }
       }
-    }, (err) => console.warn("Settings listener warning:", err.message));
+    }, () => {});
 
-    // E. Live listener for Payments
+    // E. Payments
     onSnapshot(collection(db, PAYMENTS_COL), (snapshot) => {
       if (!snapshot.empty) {
         const livePayments = snapshot.docs.map((d) => d.data());
         set({ payments: livePayments });
       }
-    }, (err) => console.warn("Live payments listener warning:", err.message));
+    }, () => {});
 
-    // F. Live listener for Notices / Broadcasts
+    // F. Notices
     onSnapshot(collection(db, NOTICES_COL), (snapshot) => {
       if (!snapshot.empty) {
         const liveNotices = snapshot.docs.map((d) => d.data());
         set({ notices: liveNotices });
       }
-    }, (err) => console.warn("Live notices listener warning:", err.message));
-
-    console.log("🔥 Firebase cloud sync initialized successfully!");
+    }, () => {});
   } catch (error) {
     console.warn("Firebase sync initialization:", error.message);
   }

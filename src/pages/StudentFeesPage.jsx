@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import useStore from "../store/useStore";
 import CountUp from "../components/CountUp";
 import Header from "../components/Header";
+import PaystackButton from "../components/PaystackButton";
 import { money, splitPayment } from "../utils";
 
 export default function StudentFeesPage() {
@@ -9,7 +10,7 @@ export default function StudentFeesPage() {
   const students = useStore((state) => state.students);
   const payments = useStore((state) => state.payments);
   const pay = useStore((state) => state.pay);
-  const me = students.find((s) => s.id === user.id) || { charged: 0, paid: 0, items: [], account: "" }; // only my own record
+  const me = students.find((s) => s.id === user.id) || { charged: 0, paid: 0, items: [], account: "" };
   const owing = Math.max(0, me.charged - me.paid);
   const isPaidInFull = owing <= 0;
   const rows = splitPayment(me.items || [], me.paid);
@@ -27,7 +28,7 @@ export default function StudentFeesPage() {
     setTimeout(() => setToast(""), 3500);
   };
 
-  // Sync default pay amount if owing updates and entered amount exceeds new owing
+  // Sync default pay amount if owing updates
   useEffect(() => {
     if (owing <= 0) {
       setPayAmount("");
@@ -40,23 +41,19 @@ export default function StudentFeesPage() {
   const numToPay = Number(payAmount);
   const isValidAmount = !isNaN(numToPay) && numToPay > 0 && numToPay <= owing;
 
-  const handlePay = (e) => {
-    e.preventDefault();
-    if (isPaidInFull || owing <= 0) return;
-
-    if (isNaN(numToPay) || numToPay <= 0) {
-      setPayError("Please enter an amount greater than ₦0");
-      return;
-    }
-    if (numToPay > owing) {
-      setPayError(`Amount cannot exceed the total balance of ${money(owing)}`);
-      return;
-    }
-
-    setPayError("");
-    pay(me.id, numToPay);
-    showToast(`✓ Payment of ${money(numToPay)} successful!`);
+  // Called when Paystack confirms a successful charge
+  const handlePaystackSuccess = (response) => {
+    // Record in our store / Firebase
+    pay(me.id, numToPay, "Paystack", response.reference);
+    showToast(`✓ Payment of ${money(numToPay)} confirmed! Ref: ${response.reference}`);
   };
+
+  const handlePaystackClose = () => {
+    showToast("Payment window closed — no charge was made.");
+  };
+
+  // Generate a stable reference tied to student + amount + timestamp
+  const paystackRef = `RA-${me.id}-${numToPay}-${Date.now()}`;
 
   return (
     <div className="pg p-StudentFees">
@@ -120,7 +117,7 @@ export default function StudentFeesPage() {
             ) : (
               myPayments.map((p) => (
                 <div className="hd" key={p.id}>
-                  <span>{p.date} · {p.method}</span>
+                  <span>{p.date} · {p.method}{p.ref ? ` · ${p.ref}` : ""}</span>
                   <span>
                     <b>{money(p.amount)}</b>
                     {" "}
@@ -178,7 +175,7 @@ export default function StudentFeesPage() {
                 </button>
               </>
             ) : (
-              <form onSubmit={handlePay}>
+              <>
                 <p className="m" style={{ margin: "0 0 14px", fontSize: "13.5px" }}>
                   Pay in full or make flexible partial payments in instalments.
                 </p>
@@ -280,9 +277,19 @@ export default function StudentFeesPage() {
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  className="btn"
+                {/* Paystack Payment Button */}
+                <PaystackButton
+                  email={me.email || user.email || `${me.id}@rehobothacademy.edu.ng`}
+                  amountKobo={numToPay * 100}
+                  reference={paystackRef}
+                  metadata={{
+                    studentId: me.id,
+                    studentName: me.name,
+                    className: me.className,
+                    term: "First Term",
+                    type: "school_fees",
+                  }}
+                  label={isValidAmount ? `Pay ${money(numToPay)} via Paystack` : "Pay Now via Paystack"}
                   disabled={!isValidAmount}
                   style={{
                     width: "100%",
@@ -290,23 +297,29 @@ export default function StudentFeesPage() {
                     textAlign: "center",
                     cursor: isValidAmount ? "pointer" : "not-allowed",
                     opacity: isValidAmount ? 1 : 0.6,
+                    marginBottom: "16px",
                   }}
-                >
-                  Pay {isValidAmount ? money(numToPay) : "Now"}
-                </button>
+                  onSuccess={handlePaystackSuccess}
+                  onClose={handlePaystackClose}
+                />
 
-                <p className="m" style={{ margin: "16px 0 4px" }}>
-                  Or transfer to your dedicated virtual account
-                </p>
+                {/* Divider */}
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", margin: "4px 0 14px" }}>
+                  <div style={{ flex: 1, height: "1px", background: "#e0e8e4" }} />
+                  <span className="m" style={{ fontSize: "12px", whiteSpace: "nowrap" }}>or pay via transfer</span>
+                  <div style={{ flex: 1, height: "1px", background: "#e0e8e4" }} />
+                </div>
+
+                <p className="m" style={{ margin: "0 0 4px" }}>Transfer to your dedicated virtual account</p>
                 <b style={{ fontSize: "20px" }}>{me.account}</b>
                 <div className="m">Wema Bank · Rehoboth Academy</div>
-              </form>
+              </>
             )}
           </div>
           <div className="card">
             <b>Private to you.</b>
             {" "}
-            <span className="m">Other students’ fees are hidden.</span>
+            <span className="m">Other students' fees are hidden.</span>
           </div>
         </aside>
       </div>

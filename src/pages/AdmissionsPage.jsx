@@ -1,6 +1,7 @@
 import { useState } from "react";
 import useStore from "../store/useStore";
 import Header from "../components/Header";
+import PaystackButton from "../components/PaystackButton";
 
 const classes = ["Primary 4", "Primary 5", "JSS 1", "JSS 2", "SS 1", "SS 2"];
 
@@ -112,33 +113,96 @@ export default function AdmissionsPage() {
               borderRadius: "12px",
               padding: "20px 24px",
               marginBottom: "28px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: "16px",
             }}
           >
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ fontSize: "22px" }}>🎉</span>
-                <b style={{ color: "#14532d", fontSize: "18px" }}>
-                  Application Received for {lastSubmitted.childName}!
-                </b>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px" }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "22px" }}>🎉</span>
+                  <b style={{ color: "#14532d", fontSize: "18px" }}>
+                    Application Received for {lastSubmitted.childName}!
+                  </b>
+                </div>
+                <p style={{ margin: "6px 0 0", color: "#166534", fontSize: "14.5px", lineHeight: "1.4" }}>
+                  Application Reference: <b>{lastSubmitted.id}</b> · Class: <b>{lastSubmitted.className}</b>.<br />
+                  Thank you for applying! Our admissions office will contact you on <b>{lastSubmitted.phone}</b> to schedule your child's entrance assessment.
+                </p>
               </div>
-              <p style={{ margin: "6px 0 0", color: "#166534", fontSize: "14.5px", lineHeight: "1.4" }}>
-                Application Reference: <b>{lastSubmitted.id}</b> · Class: <b>{lastSubmitted.className}</b>.<br />
-                Thank you for applying! Our admissions office will contact you on <b>{lastSubmitted.phone}</b> to schedule your child's entrance assessment.
-              </p>
+              <button
+                type="button"
+                className="btn o"
+                onClick={() => setLastSubmitted(null)}
+                style={{ background: "#ffffff", borderColor: "#16a34a", color: "#15803d", flexShrink: 0 }}
+              >
+                Done / Dismiss
+              </button>
             </div>
-            <button
-              type="button"
-              className="btn o"
-              onClick={() => setLastSubmitted(null)}
-              style={{ background: "#ffffff", borderColor: "#16a34a", color: "#15803d" }}
-            >
-              Done / Dismiss
-            </button>
+
+            {/* Application fee payment via Paystack */}
+            {!lastSubmitted.feePaid && (
+              <div
+                style={{
+                  marginTop: "16px",
+                  padding: "16px",
+                  background: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                  borderRadius: "10px",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+                  <div>
+                    <b style={{ color: "#15803d", fontSize: "15px" }}>📋 Pay Application Processing Fee</b>
+                    <p style={{ margin: "4px 0 0", fontSize: "13.5px", color: "#166534" }}>
+                      A non-refundable fee of <b>₦5,000</b> is required to process your application.
+                      {lastSubmitted.email ? (
+                        <> Payment confirmation will be sent to <b>{lastSubmitted.email}</b>.</>
+                      ) : (
+                        <> Please provide your email at the front desk for a payment receipt.</>  
+                      )}
+                    </p>
+                  </div>
+                  {lastSubmitted.email ? (
+                    <PaystackButton
+                      email={lastSubmitted.email}
+                      amountKobo={500000} // ₦5,000 = 500,000 kobo
+                      reference={`RA-APP-${lastSubmitted.id}-${Date.now()}`}
+                      metadata={{
+                        applicantName: lastSubmitted.childName,
+                        applicationRef: lastSubmitted.id,
+                        className: lastSubmitted.className,
+                        type: "application_fee",
+                      }}
+                      label="Pay ₦5,000 Application Fee"
+                      style={{ flexShrink: 0 }}
+                      onSuccess={(response) => {
+                        setLastSubmitted((prev) => ({ ...prev, feePaid: true, feeRef: response.reference }));
+                      }}
+                      onClose={() => {}}
+                    />
+                  ) : (
+                    <div style={{ fontSize: "13px", color: "#6b7e76", fontStyle: "italic" }}>
+                      Add your email on the form to pay online.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {lastSubmitted.feePaid && (
+              <div
+                style={{
+                  marginTop: "12px",
+                  padding: "10px 16px",
+                  background: "#bbf7d0",
+                  borderRadius: "8px",
+                  color: "#14532d",
+                  fontWeight: 600,
+                  fontSize: "14px",
+                }}
+              >
+                ✅ Application fee paid! Ref: <code>{lastSubmitted.feeRef}</code>. Your application is fully submitted.
+              </div>
+            )}
           </div>
         )}
 
