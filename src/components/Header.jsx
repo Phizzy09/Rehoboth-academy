@@ -74,7 +74,27 @@ export default function Header({ kind, active }) {
           </a>
         ))}
       </nav>
-      <span style={chipStyle}>{chipText}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <span
+          title="Connected to Firebase Cloud Firestore"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "5px",
+            fontSize: "12px",
+            fontWeight: 700,
+            padding: "3px 10px",
+            borderRadius: "99px",
+            background: "#fff7ed",
+            color: "#c2410c",
+            border: "1px solid #fed7aa",
+          }}
+        >
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#f97316" }} />
+          🔥 Firebase
+        </span>
+        <span style={chipStyle}>{chipText}</span>
+      </div>
       <a className="btn o" href="#" onClick={(e) => { e.preventDefault(); logout(); }}>Log out</a>
     </header>
   );

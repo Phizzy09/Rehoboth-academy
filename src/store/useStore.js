@@ -1,5 +1,18 @@
 import { create } from "zustand";
 import { students, results, reportInfo, notices, payments, initialApplications, teachers } from "../data/data";
+import {
+  fbSaveApplication,
+  fbUpdateApplication,
+  fbDeleteApplication,
+  fbSaveStudent,
+  fbSaveScore,
+  fbBulkSaveScores,
+  fbSavePayment,
+  fbSaveNotice,
+  fbSaveEmailDispatch,
+  fbSaveReleaseStatus,
+  initFirebaseSync,
+} from "../services/firebaseService";
 
 const loadApplications = () => {
   try {
@@ -98,29 +111,36 @@ const useStore = create((set, get) => ({
 
   // The school changes what a student is charged for a specific fee item.
   setFeeItem: (studentId, itemName, amount) =>
-    set((state) => ({
-      students: state.students.map((s) => {
+    set((state) => {
+      let updatedStudent = null;
+      const updatedStudents = state.students.map((s) => {
         if (s.id !== studentId) return s;
         const items = s.items.map((item) =>
           item.name === itemName ? { ...item, charged: amount } : item
         );
         const charged = items.reduce((sum, item) => sum + item.charged, 0);
-        return { ...s, items, charged };
-      }),
-    })),
+        updatedStudent = { ...s, items, charged };
+        return updatedStudent;
+      });
+      if (updatedStudent) fbSaveStudent(updatedStudent);
+      return { students: updatedStudents };
+    }),
 
   // Bulk: set tuition for every student in a class.
   bulkSetTuitionByClass: (className, tuition) =>
-    set((state) => ({
-      students: state.students.map((s) => {
+    set((state) => {
+      const updatedStudents = state.students.map((s) => {
         if (s.className !== className) return s;
         const items = s.items.map((item) =>
           item.name === "Tuition" ? { ...item, charged: tuition } : item
         );
         const charged = items.reduce((sum, item) => sum + item.charged, 0);
-        return { ...s, items, charged };
-      }),
-    })),
+        const updated = { ...s, items, charged };
+        fbSaveStudent(updated);
+        return updated;
+      });
+      return { students: updatedStudents };
+    }),
 
   // Record a payment against a student (school side: cash/POS/transfer).
   recordPayment: (studentId, amount, method) =>
@@ -129,18 +149,21 @@ const useStore = create((set, get) => ({
       if (!student) return {};
       const newPaid = student.paid + amount;
       const date = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+      const updatedStudent = { ...student, paid: newPaid };
+      const paymentObj = { id: Date.now(), studentId, date, method, amount };
+
+      fbSaveStudent(updatedStudent);
+      fbSavePayment(paymentObj);
+
       return {
         students: state.students.map((s) =>
-          s.id === studentId ? { ...s, paid: newPaid } : s
+          s.id === studentId ? updatedStudent : s
         ),
-        payments: [
-          ...state.payments,
-          { id: Date.now(), studentId, date, method, amount },
-        ],
+        payments: [...state.payments, paymentObj],
       };
     }),
 
-  // A student pays from their own portal (always full-balance transfer).
+  // A student pays from their own portal (partial or full).
   pay: (id, amount) =>
     set((state) => {
       const student = state.students.find((s) => s.id === id);
@@ -151,14 +174,17 @@ const useStore = create((set, get) => ({
       if (paymentAmount <= 0) return {};
       const newPaid = student.paid + paymentAmount;
       const date = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+      const updatedStudent = { ...student, paid: newPaid };
+      const paymentObj = { id: Date.now(), studentId: id, date, method: "Transfer", amount: paymentAmount };
+
+      fbSaveStudent(updatedStudent);
+      fbSavePayment(paymentObj);
+
       return {
         students: state.students.map((s) =>
-          s.id === id ? { ...s, paid: newPaid } : s
+          s.id === id ? updatedStudent : s
         ),
-        payments: [
-          ...state.payments,
-          { id: Date.now(), studentId: id, date, method: "Transfer", amount: paymentAmount },
-        ],
+        payments: [...state.payments, paymentObj],
       };
     }),
 
@@ -167,6 +193,7 @@ const useStore = create((set, get) => ({
   // Save scores for one student in one subject.
   setScore: (studentId, subject, ca, exam) =>
     set((state) => {
+      fbSaveScore(studentId, subject, ca, exam);
       const existing = state.results.find(
         (r) => r.studentId === studentId && r.subject === subject
       );
@@ -187,9 +214,10 @@ const useStore = create((set, get) => ({
       };
     }),
 
-  // Bulk-import scores parsed from a CSV/Excel (array of {studentId,subject,ca,exam}).
+  // Bulk-import scores (array of {studentId,subject,ca,exam}).
   bulkImportScores: (rows) =>
     set((state) => {
+      fbBulkSaveScores(rows);
       let results = [...state.results];
       rows.forEach(({ studentId, subject, ca, exam }) => {
         const idx = results.findIndex(
@@ -206,6 +234,7 @@ const useStore = create((set, get) => ({
 
   releaseResults: () =>
     set((state) => {
+      fbSaveReleaseStatus(true);
       const notice = {
         id: Date.now(),
         tag: "Results",
@@ -215,18 +244,21 @@ const useStore = create((set, get) => ({
         goto: "studentResults",
         channels: "WhatsApp, SMS",
       };
+      fbSaveNotice(notice);
       return {
         released: true,
         notices: [notice, ...state.notices.filter((n) => n.title !== "First term results are ready")],
       };
     }),
-  unreleaseResults: () => set({ released: false }),
+
+  unreleaseResults: () => {
+    fbSaveReleaseStatus(false);
+    return set({ released: false });
+  },
 
   addStudent: (data) =>
     set((state) => {
-      // Auto-generate next Student ID strictly
       const newId = getNextStudentId(state.students);
-
       const tuition = tuitionByClass[data.className] || 100000;
       const items = data.items || [
         { name: "Tuition", charged: tuition },
@@ -237,7 +269,7 @@ const useStore = create((set, get) => ({
       const charged = data.charged !== undefined ? data.charged : items.reduce((sum, it) => sum + it.charged, 0);
       const studentNum = parseInt(newId.replace(/\D/g, ""), 10) || 50;
       const account = data.account || `992001${1100 + studentNum}`;
-      const email = data.email || (data.name ? `${data.name.toLowerCase().replace(/[^a-z]/g, "")}@gmail.com` : `${newId.toLowerCase()}@rehoboth.edu.ng`);
+      const email = data.email || (data.name ? `${data.name.toLowerCase().replace(/[^a-z0-9]/g, "")}@gmail.com` : `${newId.toLowerCase()}@rehoboth.edu.ng`);
 
       const newStudent = {
         id: newId,
@@ -252,7 +284,6 @@ const useStore = create((set, get) => ({
         ...data,
       };
 
-      // Dispatched email notification to student/parent
       const emailDispatch = {
         id: Date.now(),
         timestamp: new Date().toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }),
@@ -265,6 +296,10 @@ const useStore = create((set, get) => ({
         status: "Sent & Delivered",
       };
 
+      // Save student and dispatch log to Firebase Cloud Firestore
+      fbSaveStudent(newStudent);
+      fbSaveEmailDispatch(emailDispatch);
+
       return {
         students: [...state.students, newStudent],
         emailDispatches: [emailDispatch, ...(state.emailDispatches || [])],
@@ -272,7 +307,11 @@ const useStore = create((set, get) => ({
       };
     }),
 
-  addNotice: (notice) => set((state) => ({ notices: [notice, ...state.notices] })),
+  addNotice: (notice) => {
+    fbSaveNotice(notice);
+    return set((state) => ({ notices: [notice, ...state.notices] }));
+  },
+
   addParent: (parent) => set((state) => ({ parents: [...state.parents, parent] })),
 
   // ---------- ADMISSIONS ACTIONS ----------
@@ -290,6 +329,10 @@ const useStore = create((set, get) => ({
         notes: "",
         ...appData,
       };
+
+      // Save to Firebase Cloud Firestore
+      fbSaveApplication(newApp);
+
       const updated = [newApp, ...state.applications];
       saveApplications(updated);
       return { applications: updated };
@@ -297,6 +340,7 @@ const useStore = create((set, get) => ({
 
   updateApplication: (id, updates) =>
     set((state) => {
+      fbUpdateApplication(id, updates);
       const updated = state.applications.map((app) =>
         app.id === id ? { ...app, ...updates } : app
       );
@@ -306,6 +350,7 @@ const useStore = create((set, get) => ({
 
   deleteApplication: (id) =>
     set((state) => {
+      fbDeleteApplication(id);
       const updated = state.applications.filter((app) => app.id !== id);
       saveApplications(updated);
       return { applications: updated };
@@ -316,7 +361,6 @@ const useStore = create((set, get) => ({
       const app = state.applications.find((a) => a.id === applicationId);
       if (!app) return {};
 
-      // Determine next student ID
       const existingNums = state.students
         .map((s) => {
           const m = s.id.match(/STU-(\d+)/);
@@ -371,8 +415,7 @@ const useStore = create((set, get) => ({
         channels: "WhatsApp, SMS",
       };
 
-      // Dispatched email notification to student/parent
-      const emailRecipient = app.email || (app.childName ? `${app.childName.toLowerCase().replace(/[^a-z]/g, "")}@gmail.com` : `${newId.toLowerCase()}@rehoboth.edu.ng`);
+      const emailRecipient = app.email || (app.childName ? `${app.childName.toLowerCase().replace(/[^a-z0-9]/g, "")}@gmail.com` : `${newId.toLowerCase()}@rehoboth.edu.ng`);
       const emailDispatch = {
         id: Date.now(),
         timestamp: new Date().toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }),
@@ -385,6 +428,12 @@ const useStore = create((set, get) => ({
         status: "Sent & Delivered",
       };
 
+      // Sync all 4 actions to Firebase
+      fbSaveStudent(newStudent);
+      fbUpdateApplication(applicationId, { status: "Admitted", notes: `Enrolled with Student ID: ${newId}.` });
+      fbSaveNotice(welcomeNotice);
+      fbSaveEmailDispatch(emailDispatch);
+
       return {
         students: [...state.students, newStudent],
         applications: updatedApps,
@@ -394,5 +443,12 @@ const useStore = create((set, get) => ({
       };
     }),
 }));
+
+// Initialize Firebase Cloud sync on app startup
+if (typeof window !== "undefined") {
+  setTimeout(() => {
+    initFirebaseSync(useStore.setState, useStore.getState);
+  }, 300);
+}
 
 export default useStore;
