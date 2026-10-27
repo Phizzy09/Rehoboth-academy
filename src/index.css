@@ -101,3 +101,20 @@ body{margin:0}
 .p-SchoolResults .btn{display:inline-block;min-height:38px;padding:8px 16px;background:#0f5c47;color:#fff;border-radius:8px;border:0;font:inherit;font-weight:600;text-decoration:none;cursor:pointer}
 .p-SchoolResults .btn.o{background:#fff;color:#0f5c47;border:1.5px solid #0f5c47}
 .p-SchoolResults .btn:disabled{opacity:0.65;cursor:default}
+
+/* ── Redesigned Clean Results UI ── */
+.clean-score-input{width:70px;min-height:38px;padding:6px 10px;border:1.5px solid #c9d8d0;border-radius:8px;font:inherit;font-size:14px;font-weight:700;text-align:center;background:#fff;transition:border-color 0.15s,box-shadow 0.15s}
+.clean-score-input:focus{outline:none;border-color:#0f5c47;box-shadow:0 0 0 3px rgba(15,92,71,0.12)}
+.clean-score-input.draft-input{border-color:#f59e0b;background:#fffdf7}
+.grade-pill{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:26px;padding:0 8px;border-radius:99px;font-weight:800;font-size:13px}
+.grade-pill.grade-A{background:#dcfce7;color:#15803d}
+.grade-pill.grade-B{background:#e0f2fe;color:#0369a1}
+.grade-pill.grade-C{background:#fef3c7;color:#92400e}
+.grade-pill.grade-D{background:#fee2e2;color:#b91c1c}
+.clean-table{width:100%;border-collapse:collapse}
+.clean-table th{background:#f8faf9;color:#4a5d55;font-weight:600;font-size:13px;padding:12px 14px;border-bottom:1.5px solid #e2ece7;text-align:left}
+.clean-table td{padding:12px 14px;border-bottom:1px solid #edf2ef;font-size:14px;vertical-align:middle}
+.clean-table tbody tr{transition:background 0.15s ease}
+.clean-table tbody tr:hover{background:#f8faf9}
+.report-slip-box{background:#fff;border:1px solid #d8e1dc;border-radius:12px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,0.06)}
+
