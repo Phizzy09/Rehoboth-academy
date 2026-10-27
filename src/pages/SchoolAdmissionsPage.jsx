@@ -51,6 +51,11 @@ export default function SchoolAdmissionsPage() {
   // Save changes from modal
   const handleSaveModalUpdates = () => {
     if (!selectedApplicant) return;
+    if (modalStatus === "Admitted" && selectedApplicant.status !== "Admitted") {
+      handleAdmitApplicant(selectedApplicant.id);
+      setSelectedApplicant(null);
+      return;
+    }
     updateApplication(selectedApplicant.id, {
       status: modalStatus,
       score: modalScore,
@@ -67,6 +72,7 @@ export default function SchoolAdmissionsPage() {
 
   // Admit applicant directly
   const handleAdmitApplicant = (appId) => {
+    const app = applications.find((a) => a.id === appId);
     admitStudentFromApplication(appId);
     if (selectedApplicant && selectedApplicant.id === appId) {
       setSelectedApplicant((prev) => ({
@@ -75,7 +81,7 @@ export default function SchoolAdmissionsPage() {
       }));
       setModalStatus("Admitted");
     }
-    showToast("Student successfully admitted & enrolled into school records!");
+    showToast(`🎉 Student admitted! Login ID & Password dispatched to ${app?.email || "applicant email"}.`);
   };
 
   // Filtered applicants

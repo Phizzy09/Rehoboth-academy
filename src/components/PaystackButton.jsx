@@ -1,36 +1,21 @@
 /**
  * PaystackButton — reusable Paystack inline payment trigger.
  *
+ * The Paystack SDK (inline.js) is loaded globally in index.html,
+ * so window.PaystackPop is always available by the time this component mounts.
+ *
  * Props:
- *   email      {string}   – payer's email address
- *   amountKobo {number}   – amount in kobo (₦1 = 100 kobo)
+ *   email      {string}   – payer's email address (required by Paystack)
+ *   amountKobo {number}   – amount in KOBO (₦1 = 100 kobo, so ₦5,000 = 500000)
  *   reference  {string}   – unique transaction reference
- *   metadata   {object}   – optional extra data passed to Paystack
- *   label      {string}   – button label text (default "Pay with Paystack")
+ *   metadata   {object}   – optional extra data sent to Paystack dashboard
+ *   label      {string}   – button label text
  *   disabled   {boolean}  – disables the button
- *   className  {string}   – extra CSS class names
+ *   className  {string}   – CSS class (default "btn")
  *   style      {object}   – inline styles to merge
- *   onSuccess  {function} – called with (response) on successful payment
- *   onClose    {function} – called when the popup is dismissed without paying
+ *   onSuccess  {function} – called with Paystack response on successful payment
+ *   onClose    {function} – called when popup is closed without paying
  */
-import { useEffect, useRef, useState } from "react";
-
-const PAYSTACK_SCRIPT_SRC = "https://js.paystack.co/v1/inline.js";
-
-function ensureScript(cb) {
-  if (window.PaystackPop) { cb(); return; }
-  const existing = document.querySelector(`script[src="${PAYSTACK_SCRIPT_SRC}"]`);
-  if (existing) {
-    existing.addEventListener("load", cb);
-    return;
-  }
-  const s = document.createElement("script");
-  s.src = PAYSTACK_SCRIPT_SRC;
-  s.async = true;
-  s.onload = cb;
-  document.head.appendChild(s);
-}
-
 export default function PaystackButton({
   email,
   amountKobo,
@@ -43,22 +28,29 @@ export default function PaystackButton({
   onSuccess = () => {},
   onClose = () => {},
 }) {
-  const [scriptReady, setScriptReady] = useState(!!window.PaystackPop);
-
-  useEffect(() => {
-    if (!scriptReady) {
-      ensureScript(() => setScriptReady(true));
-    }
-  }, []);
-
   const handlePay = () => {
-    if (!scriptReady) return;
-    if (!email) { alert("Email address is required for Paystack payment."); return; }
+    // Guard: check PaystackPop is available
+    if (!window.PaystackPop) {
+      alert("Paystack payment system is still loading. Please wait a moment and try again.");
+      return;
+    }
+
+    if (!email || !email.includes("@")) {
+      alert("A valid email address is required to process your payment.");
+      return;
+    }
+
+    const key = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
+    if (!key) {
+      console.error("VITE_PAYSTACK_PUBLIC_KEY is not set in .env");
+      alert("Payment configuration error. Please contact the school administrator.");
+      return;
+    }
 
     const handler = window.PaystackPop.setup({
-      key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
+      key,
       email,
-      amount: Math.round(amountKobo), // must be integer kobo
+      amount: Math.round(amountKobo),   // must be integer kobo
       currency: "NGN",
       ref: reference || `RA-${Date.now()}`,
       metadata,
@@ -73,29 +65,38 @@ export default function PaystackButton({
     handler.openIframe();
   };
 
-  const isDisabled = disabled || !scriptReady;
-
   return (
     <button
       type="button"
+      id={`paystack-btn-${reference || "default"}`}
       className={className}
       style={{
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
         gap: "8px",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.6 : 1,
         ...style,
       }}
-      disabled={isDisabled}
+      disabled={disabled}
       onClick={handlePay}
-      title={isDisabled && !disabled ? "Loading payment system…" : undefined}
     >
-      {/* Paystack logo mark */}
-      <svg width="18" height="18" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <rect width="36" height="36" rx="8" fill="currentColor" fillOpacity="0.12"/>
-        <path d="M7 14h22v3H7zM7 19h22v3H7z" fill="currentColor"/>
+      {/* Paystack stripe mark */}
+      <svg
+        width="18"
+        height="12"
+        viewBox="0 0 60 40"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+        style={{ flexShrink: 0 }}
+      >
+        <rect y="0" width="60" height="12" rx="4" fill="currentColor" fillOpacity="0.9" />
+        <rect y="18" width="60" height="12" rx="4" fill="currentColor" fillOpacity="0.6" />
+        <rect y="28" width="40" height="12" rx="4" fill="currentColor" fillOpacity="0.35" />
       </svg>
-      {!scriptReady ? "Loading…" : label}
+      {label}
     </button>
   );
 }

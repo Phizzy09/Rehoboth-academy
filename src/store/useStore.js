@@ -288,6 +288,7 @@ const useStore = create((set, get) => ({
         ...data,
       };
 
+      const portalUrl = typeof window !== "undefined" ? window.location.origin : "https://rehoboth-academy.edu.ng";
       const emailDispatch = {
         id: Date.now(),
         timestamp: new Date().toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }),
@@ -296,8 +297,24 @@ const useStore = create((set, get) => ({
         email: newStudent.email,
         defaultPassword: "1234",
         className: newStudent.className,
-        subject: `Welcome to Rehoboth Academy! Your Student ID & Portal Login Credentials (${newId})`,
-        status: "Sent & Delivered",
+        subject: `🎉 Admission Confirmed! Your Student Login ID & Password (${newId})`,
+        messageBody: `Dear ${newStudent.name},
+
+Congratulations! You have been officially enrolled into ${newStudent.className} at Rehoboth Academy.
+
+Your student portal login details:
+--------------------------------------------------
+Student Login ID : ${newId}
+Default Password : 1234
+Enrolled Class   : ${newStudent.className}
+Portal Web Link  : ${portalUrl}
+--------------------------------------------------
+
+Log in to access term results, continuous assessment reports, and fee records.
+
+Warm regards,
+Admissions Committee, Rehoboth Academy`,
+        status: `Delivered to ${newStudent.email}`,
       };
 
       // Save student and dispatch log to Firebase Cloud Firestore
@@ -419,7 +436,34 @@ const useStore = create((set, get) => ({
         channels: "WhatsApp, SMS",
       };
 
-      const emailRecipient = app.email || (app.childName ? `${app.childName.toLowerCase().replace(/[^a-z0-9]/g, "")}@gmail.com` : `${newId.toLowerCase()}@rehoboth.edu.ng`);
+      const emailRecipient = (app.email && app.email.trim()) || (app.childName ? `${app.childName.toLowerCase().replace(/[^a-z0-9]/g, "")}@gmail.com` : `${newId.toLowerCase()}@rehoboth.edu.ng`);
+      const portalUrl = typeof window !== "undefined" ? window.location.origin : "https://rehoboth-academy.edu.ng";
+      const messageBody = `Dear ${app.parentName ? app.parentName + " & " : ""}${app.childName},
+
+Congratulations! We are delighted to inform you that ${app.childName} has been officially admitted into ${app.className} at Rehoboth Academy.
+
+Below are your official student portal login details:
+--------------------------------------------------
+Student Login ID : ${newId}
+Default Password : 1234
+Enrolled Class   : ${app.className}
+Portal Web Link  : ${portalUrl}
+--------------------------------------------------
+
+How to Log In:
+1. Visit the portal link: ${portalUrl}
+2. Go to the "Portal Login" page.
+3. Select "Student Portal".
+4. Enter your Student ID (${newId}) and PIN/Password (1234).
+
+From your portal dashboard, you can view examination results, subject broadsheets, attendance, and fee invoices.
+
+Welcome to the Rehoboth Academy family!
+
+Warm regards,
+Admissions Committee
+Rehoboth Academy, Ilorin, Kwara State`;
+
       const emailDispatch = {
         id: Date.now(),
         timestamp: new Date().toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }),
@@ -428,8 +472,10 @@ const useStore = create((set, get) => ({
         email: emailRecipient,
         defaultPassword: "1234",
         className: app.className,
-        subject: `Welcome to Rehoboth Academy! Your Student ID & Portal Login Credentials (${newId})`,
-        status: "Sent & Delivered",
+        parentName: app.parentName || "Parent / Guardian",
+        subject: `🎉 Admission Confirmed! Your Student Login ID & Password (${newId})`,
+        messageBody,
+        status: `Delivered to ${emailRecipient}`,
       };
 
       // Sync all 4 actions to Firebase

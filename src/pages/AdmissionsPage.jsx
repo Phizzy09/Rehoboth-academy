@@ -52,6 +52,11 @@ export default function AdmissionsPage() {
     if (!formData.childName.trim()) errors.childName = "Child full name is required";
     if (!formData.parentName.trim()) errors.parentName = "Parent/Guardian name is required";
     if (!formData.phone.trim()) errors.phone = "Phone number is required";
+    if (!formData.email.trim()) {
+      errors.email = "Email address is required for sending login ID & password";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      errors.email = "Please enter a valid email address";
+    }
 
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
@@ -403,13 +408,22 @@ export default function AdmissionsPage() {
                     </label>
 
                     <label>
-                      Email Address
+                      Email Address *
                       <input
                         type="email"
                         placeholder="e.g. nwosu.family@gmail.com"
                         value={formData.email}
                         onChange={(e) => handleInputChange("email", e.target.value)}
                       />
+                      {formErrors.email ? (
+                        <span style={{ color: "#b91c1c", fontSize: "12px", marginTop: "2px", display: "block" }}>
+                          {formErrors.email}
+                        </span>
+                      ) : (
+                        <span style={{ color: "#0f5c47", fontSize: "11.5px", marginTop: "3px", display: "block" }}>
+                          ✉️ Student ID &amp; portal password will be sent here upon admission
+                        </span>
+                      )}
                     </label>
                   </div>
 

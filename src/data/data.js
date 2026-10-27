@@ -48,29 +48,29 @@ export const teachers = [
 
 export const students = [
   // Primary 4
-  { id: "STU-001", name: "Ifeoma Okon",   className: "Primary 4", account: "9920011102", charged: 123000, paid: 60000,
+  { id: "STU-001", name: "Ifeoma Okon",   email: "ifeoma.okon@gmail.com",   className: "Primary 4", account: "9920011102", charged: 123000, paid: 60000,
     items: [{ name: "Tuition", charged: 80000 }, { name: "Books & Supplies", charged: 18000 }, { name: "Development Levy", charged: 10000 }, { name: "ICT Fee", charged: 15000 }] },
-  { id: "STU-006", name: "Ngozi Adaeze",  className: "Primary 4", account: "9920011110", charged: 123000, paid: 123000, items: fees(80000) },
-  { id: "STU-007", name: "Emeka Nwosu",   className: "Primary 4", account: "9920011111", charged: 123000, paid: 0,      items: fees(80000) },
+  { id: "STU-006", name: "Ngozi Adaeze",  email: "ngozi.adaeze@gmail.com",  className: "Primary 4", account: "9920011110", charged: 123000, paid: 123000, items: fees(80000) },
+  { id: "STU-007", name: "Emeka Nwosu",   email: "emeka.nwosu@gmail.com",   className: "Primary 4", account: "9920011111", charged: 123000, paid: 0,      items: fees(80000) },
 
   // JSS 1
-  { id: "STU-002", name: "Amaka Eze",     className: "JSS 1",     account: "9920011104", charged: 155000, paid: 0,      items: fees(112000) },
-  { id: "STU-004", name: "Tunde Bello",   className: "JSS 1",     account: "9920011103", charged: 155000, paid: 155000, items: fees(112000) },
-  { id: "STU-005", name: "Chinedu Obi",   className: "JSS 1",     account: "9920011109", charged: 155000, paid: 0,      items: fees(112000) },
-  { id: "STU-008", name: "Fatima Aliyu",  className: "JSS 1",     account: "9920011112", charged: 155000, paid: 80000,  items: fees(112000) },
+  { id: "STU-002", name: "Amaka Eze",     email: "amaka.eze@gmail.com",     className: "JSS 1",     account: "9920011104", charged: 155000, paid: 0,      items: fees(112000) },
+  { id: "STU-004", name: "Tunde Bello",   email: "tunde.bello@gmail.com",   className: "JSS 1",     account: "9920011103", charged: 155000, paid: 155000, items: fees(112000) },
+  { id: "STU-005", name: "Chinedu Obi",   email: "chinedu.obi@gmail.com",   className: "JSS 1",     account: "9920011109", charged: 155000, paid: 0,      items: fees(112000) },
+  { id: "STU-008", name: "Fatima Aliyu",  email: "fatima.aliyu@gmail.com",  className: "JSS 1",     account: "9920011112", charged: 155000, paid: 80000,  items: fees(112000) },
 
   // JSS 2
-  { id: "STU-009", name: "Kelvin Eze",    className: "JSS 2",     account: "9920011113", charged: 158000, paid: 158000, items: fees(115000) },
-  { id: "STU-010", name: "Blessing Uche", className: "JSS 2",     account: "9920011114", charged: 158000, paid: 50000,  items: fees(115000) },
+  { id: "STU-009", name: "Kelvin Eze",    email: "kelvin.eze@gmail.com",    className: "JSS 2",     account: "9920011113", charged: 158000, paid: 158000, items: fees(115000) },
+  { id: "STU-010", name: "Blessing Uche", email: "blessing.uche@gmail.com", className: "JSS 2",     account: "9920011114", charged: 158000, paid: 50000,  items: fees(115000) },
 
   // SS 1
-  { id: "STU-011", name: "Chisom Okeke",  className: "SS 1",      account: "9920011115", charged: 185000, paid: 185000, items: fees(142000) },
-  { id: "STU-012", name: "Uche Nnamdi",   className: "SS 1",      account: "9920011116", charged: 185000, paid: 90000,  items: fees(142000) },
+  { id: "STU-011", name: "Chisom Okeke",  email: "chisom.okeke@gmail.com",  className: "SS 1",      account: "9920011115", charged: 185000, paid: 185000, items: fees(142000) },
+  { id: "STU-012", name: "Uche Nnamdi",   email: "uche.nnamdi@gmail.com",   className: "SS 1",      account: "9920011116", charged: 185000, paid: 90000,  items: fees(142000) },
 
   // SS 2
-  { id: "STU-003", name: "David Musa",    className: "SS 2",      account: "9920011106", charged: 188000, paid: 50000,
+  { id: "STU-003", name: "David Musa",    email: "david.musa@gmail.com",    className: "SS 2",      account: "9920011106", charged: 188000, paid: 50000,
     items: [{ name: "Tuition", charged: 145000 }, { name: "Books & Supplies", charged: 25000 }, { name: "Development Levy", charged: 10000 }, { name: "ICT Fee", charged: 8000 }] },
-  { id: "STU-013", name: "Ada Igwe",      className: "SS 2",      account: "9920011117", charged: 188000, paid: 0,      items: fees(145000) },
+  { id: "STU-013", name: "Ada Igwe",      email: "ada.igwe@gmail.com",      className: "SS 2",      account: "9920011117", charged: 188000, paid: 0,      items: fees(145000) },
 ];
 
 export const results = [
