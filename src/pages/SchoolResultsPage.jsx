@@ -1,17 +1,212 @@
 import { useState, useCallback } from "react";
 import useStore from "../store/useStore";
 import Header from "../components/Header";
+import EmailDispatchModal from "../components/EmailDispatchModal";
 import { ordinal, grade, chipGradeClass } from "../utils";
 import { SUBJECTS } from "../data/data";
 
 // ─── constants ────────────────────────────────────────────────
-const CLASSES = ["Primary 4", "JSS 1", "JSS 2", "SS 1", "SS 2"];
+const CLASSES = ["Primary 4", "Primary 5", "JSS 1", "JSS 2", "SS 1", "SS 2"];
 
 // ─── helpers ──────────────────────────────────────────────────
 function clamp(val, max) {
   const n = Number(val);
   if (isNaN(n) || val === "") return "";
   return Math.max(0, Math.min(max, Math.round(n)));
+}
+
+// ─── Add Student Modal ────────────────────────────────────────
+function AddStudentModal({ defaultClass, onAdd, onClose, nextSuggestedId }) {
+  const [name, setName] = useState("");
+  const [className, setClassName] = useState(defaultClass || CLASSES[0]);
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      setError("Student full name is required.");
+      return;
+    }
+    const cleanEmail = email.trim() || `${name.trim().toLowerCase().replace(/[^a-z0-9]/g, "")}@gmail.com`;
+    onAdd({
+      name: name.trim(),
+      className,
+      email: cleanEmail,
+      id: nextSuggestedId,
+    });
+    onClose();
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "520px" }}>
+        <div className="modal-head">
+          <h2 style={{ fontSize: "22px", color: "#0f5c47", margin: 0, fontFamily: "'Bricolage Grotesque', sans-serif" }}>
+            Add Student &amp; Auto-Generate ID
+          </h2>
+          <button type="button" className="modal-close" onClick={onClose}>✕</button>
+        </div>
+
+        <p className="m" style={{ margin: "0 0 16px", fontSize: "14px", lineHeight: "1.45" }}>
+          Register a new student. Their <b>Student ID is auto-generated</b> and portal credentials (with default password <b>1234</b>) will be automatically dispatched to their email.
+        </p>
+
+        {/* Auto-Generated ID Banner */}
+        <div
+          style={{
+            background: "#f0f7f4",
+            border: "1.5px solid #a3cfbb",
+            borderRadius: "10px",
+            padding: "12px 16px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "16px",
+          }}
+        >
+          <div>
+            <span style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#456155", textTransform: "uppercase", letterSpacing: "0.4px" }}>
+              Next Auto-Generated Student ID
+            </span>
+            <span style={{ fontSize: "20px", fontWeight: 800, color: "#0f5c47", letterSpacing: "0.5px" }}>
+              {nextSuggestedId}
+            </span>
+          </div>
+          <span
+            style={{
+              padding: "4px 10px",
+              borderRadius: "99px",
+              background: "#dcfce7",
+              color: "#15803d",
+              fontSize: "12px",
+              fontWeight: 700,
+            }}
+          >
+            ✨ System Auto-Generated
+          </span>
+        </div>
+
+        {error && (
+          <div style={{ background: "#fef2f2", border: "1px solid #f87171", borderRadius: "8px", padding: "10px 14px", marginBottom: "14px", color: "#b91c1c", fontSize: "14px" }}>
+            ⚠ {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} style={{ display: "grid", gap: "14px" }}>
+          <label>
+            Student Full Name *
+            <input
+              type="text"
+              placeholder="e.g. Adaobi Chidera Nwosu"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                setError("");
+                if (!email && e.target.value) {
+                  setEmail(`${e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "")}@gmail.com`);
+                }
+              }}
+              autoFocus
+              required
+            />
+          </label>
+
+          <label>
+            Class *
+            <select value={className} onChange={(e) => setClassName(e.target.value)}>
+              {CLASSES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Student / Parent Email Address *
+            <input
+              type="email"
+              placeholder="e.g. parent.nwosu@gmail.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <span className="m" style={{ fontSize: "12px", marginTop: "4px", display: "block" }}>
+              📨 Student ID (<b>{nextSuggestedId}</b>) and default password (<b>1234</b>) will be delivered here.
+            </span>
+          </label>
+
+          <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "14px" }}>
+            <button type="button" className="btn o" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="btn" style={{ background: "#0f5c47" }}>
+              ➕ Register &amp; Send Credentials Email
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Dispatch History Modal ───────────────────────────────────
+function DispatchHistoryModal({ dispatches, onClose }) {
+  return (
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1150 }}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "680px" }}>
+        <div className="modal-head">
+          <h2 style={{ fontSize: "22px", color: "#0f5c47", margin: 0, fontFamily: "'Bricolage Grotesque', sans-serif" }}>
+            Dispatched Student Credentials Log
+          </h2>
+          <button type="button" className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <p className="m" style={{ margin: "0 0 16px", fontSize: "14px" }}>
+          Log of auto-generated Student IDs and default credentials sent to students/parents via email.
+        </p>
+
+        {dispatches.length === 0 ? (
+          <p className="m" style={{ textAlign: "center", padding: "30px 0" }}>No email credentials dispatched in this session yet.</p>
+        ) : (
+          <div style={{ maxHeight: "380px", overflowY: "auto", border: "1px solid #d8e1dc", borderRadius: "8px" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13.5px" }}>
+              <thead style={{ background: "#f5f7f5", position: "sticky", top: 0 }}>
+                <tr>
+                  <th style={{ padding: "10px 12px", textAlign: "left" }}>Student</th>
+                  <th style={{ padding: "10px 12px", textAlign: "left" }}>Student ID</th>
+                  <th style={{ padding: "10px 12px", textAlign: "left" }}>Recipient Email</th>
+                  <th style={{ padding: "10px 12px", textAlign: "center" }}>Default PIN</th>
+                  <th style={{ padding: "10px 12px", textAlign: "right" }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dispatches.map((d) => (
+                  <tr key={d.id} style={{ borderBottom: "1px solid #e6ece8" }}>
+                    <td style={{ padding: "10px 12px", fontWeight: 600 }}>{d.studentName}</td>
+                    <td style={{ padding: "10px 12px" }}>
+                      <code style={{ background: "#e1f0ea", color: "#0b4a39", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>
+                        {d.studentId}
+                      </code>
+                    </td>
+                    <td style={{ padding: "10px 12px", color: "#4a5d55" }}>{d.email}</td>
+                    <td style={{ padding: "10px 12px", textAlign: "center" }}><b>{d.defaultPassword}</b></td>
+                    <td style={{ padding: "10px 12px", textAlign: "right" }}>
+                      <span style={{ color: "#15803d", fontWeight: 600, fontSize: "12px" }}>✓ Delivered</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
+          <button type="button" className="btn" onClick={onClose} style={{ background: "#0f5c47" }}>
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // Build the grade-sheet grid: rows = students, computed totals/positions
@@ -55,10 +250,10 @@ function CsvModal({ className, onImport, onClose }) {
       const lines = ev.target.result.trim().split(/\r?\n/);
       if (lines.length < 2) { setErrMsg("File is empty."); setStatus("error"); return; }
       const header = lines[0].split(",").map((h) => h.trim().toLowerCase());
-      const idCol  = header.findIndex((h) => h.includes("id") || h.includes("student"));
+      const idCol = header.findIndex((h) => h.includes("id") || h.includes("student"));
       const subCol = header.findIndex((h) => h.includes("subject"));
-      const caCol  = header.findIndex((h) => h === "ca" || h.includes("continuous"));
-      const exCol  = header.findIndex((h) => h === "exam" || h.includes("examination"));
+      const caCol = header.findIndex((h) => h === "ca" || h.includes("continuous"));
+      const exCol = header.findIndex((h) => h === "exam" || h.includes("examination"));
       if ([idCol, subCol, caCol, exCol].some((c) => c < 0)) {
         setErrMsg("Need columns: studentId, subject, ca, exam"); setStatus("error"); return;
       }
@@ -124,20 +319,45 @@ function CsvModal({ className, onImport, onClose }) {
 
 // ─── Main page ────────────────────────────────────────────────
 export default function SchoolResultsPage() {
-  const students         = useStore((s) => s.students);
-  const results          = useStore((s) => s.results);
-  const released         = useStore((s) => s.released);
-  const releaseResults   = useStore((s) => s.releaseResults);
-  const setScore         = useStore((s) => s.setScore);
+  const students = useStore((s) => s.students);
+  const results = useStore((s) => s.results);
+  const released = useStore((s) => s.released);
+  const releaseResults = useStore((s) => s.releaseResults);
+  const unreleaseResults = useStore((s) => s.unreleaseResults);
+  const setScore = useStore((s) => s.setScore);
   const bulkImportScores = useStore((s) => s.bulkImportScores);
+  const addStudent = useStore((s) => s.addStudent);
+  const latestDispatch = useStore((s) => s.latestDispatch);
+  const clearLatestDispatch = useStore((s) => s.clearLatestDispatch);
+  const emailDispatches = useStore((s) => s.emailDispatches) || [];
 
   const [selectedClass, setSelectedClass] = useState("JSS 1");
-  const [showCsv, setShowCsv]             = useState(false);
-  const [toast, setToast]                 = useState("");
+  const [showCsv, setShowCsv] = useState(false);
+  const [showAddStudent, setShowAddStudent] = useState(false);
+  const [showDispatchHistory, setShowDispatchHistory] = useState(false);
+  const [toast, setToast] = useState("");
   // local draft edits: { "STU-001|Mathematics|ca": 28, ... }
   const [drafts, setDrafts] = useState({});
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
+
+  // Calculate next suggested student ID (e.g. STU-014)
+  const existingNums = students
+    .map((s) => {
+      const m = s.id?.match(/STU-(\d+)/);
+      return m ? parseInt(m[1], 10) : 0;
+    })
+    .filter((n) => !isNaN(n));
+  const nextNum = existingNums.length ? Math.max(...existingNums) + 1 : 14;
+  const nextSuggestedId = `STU-${String(nextNum).padStart(3, "0")}`;
+
+  const handleAddStudent = (newStudentData) => {
+    addStudent(newStudentData);
+    if (newStudentData.className !== selectedClass) {
+      setSelectedClass(newStudentData.className);
+    }
+    showToast(`✓ Added ${newStudentData.name} to ${newStudentData.className}`);
+  };
 
   // Build the live sheet, merging saved results with unsaved drafts
   const draftsAsResults = Object.entries(drafts).map(([key, val]) => {
@@ -147,11 +367,11 @@ export default function SchoolResultsPage() {
 
   // Merge: start with DB results then apply drafts on top
   const mergedResults = results.map((r) => {
-    const caKey   = `${r.studentId}|${r.subject}|ca`;
+    const caKey = `${r.studentId}|${r.subject}|ca`;
     const examKey = `${r.studentId}|${r.subject}|exam`;
     return {
       ...r,
-      ca:   caKey in drafts   ? drafts[caKey]   : r.ca,
+      ca: caKey in drafts ? drafts[caKey] : r.ca,
       exam: examKey in drafts ? drafts[examKey] : r.exam,
     };
   });
@@ -185,7 +405,7 @@ export default function SchoolResultsPage() {
     });
     Object.values(grouped).forEach(({ studentId, subject, ca, exam }) => {
       // Only save if both fields have a value (don't overwrite good data with blank)
-      const savedCa   = ca   !== undefined ? ca   : results.find((r) => r.studentId === studentId && r.subject === subject)?.ca;
+      const savedCa = ca !== undefined ? ca : results.find((r) => r.studentId === studentId && r.subject === subject)?.ca;
       const savedExam = exam !== undefined ? exam : results.find((r) => r.studentId === studentId && r.subject === subject)?.exam;
       if (savedCa !== undefined && savedCa !== "" && savedExam !== undefined && savedExam !== "") {
         setScore(studentId, subject, Number(savedCa), Number(savedExam));
@@ -204,7 +424,7 @@ export default function SchoolResultsPage() {
   };
 
   // Stats
-  const ready   = rows.filter((r) => r.ready).length;
+  const ready = rows.filter((r) => r.ready).length;
   const missing = rows.length - ready;
   const classAvg = rows.filter((r) => r.average !== null).length
     ? Math.round(rows.filter((r) => r.average !== null).reduce((s, r) => s + r.average, 0) / rows.filter((r) => r.average !== null).length)
@@ -237,15 +457,33 @@ export default function SchoolResultsPage() {
             {classAvg !== null && <span className="chip" style={{ background: "#e8f3ff", color: "#1a4a80" }}>Class avg: {classAvg}%</span>}
           </div>
 
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+            <button
+              className="btn"
+              onClick={() => setShowAddStudent(true)}
+              style={{ background: "#0f5c47" }}
+              title="Add a new pupil to this class"
+            >
+              ➕ Add Student
+            </button>
+            {emailDispatches.length > 0 && (
+              <button
+                type="button"
+                className="btn o"
+                onClick={() => setShowDispatchHistory(true)}
+                title="View log of auto-generated Student IDs sent to student emails"
+                style={{ borderColor: "#0f5c47", color: "#0f5c47" }}
+              >
+                📨 Dispatched Credentials ({emailDispatches.length})
+              </button>
+            )}
             <button className="btn o" onClick={() => setShowCsv(true)}>↑ Upload CSV</button>
             <a
               className="btn o"
-              href={`data:text/csv;charset=utf-8,studentId,subject,ca,exam\n${
-                students.filter((s) => s.className === selectedClass)
+              href={`data:text/csv;charset=utf-8,studentId,subject,ca,exam\n${students.filter((s) => s.className === selectedClass)
                   .flatMap((s) => (SUBJECTS[selectedClass] || []).map((sub) => `${s.id},${sub},,`))
                   .join("\n")
-              }`}
+                }`}
               download={`${selectedClass.replace(/ /g, "-")}-template.csv`}
             >
               ↓ Template
@@ -256,16 +494,39 @@ export default function SchoolResultsPage() {
                 <button className="btn" onClick={handleSaveAll}>Save all changes</button>
               </>
             )}
-            <button
-              className={`btn${released ? " o" : ""}`}
-              onClick={releaseResults}
-              disabled={released}
-              style={released ? { opacity: 0.7 } : {}}
-            >
-              {released ? "✓ Released" : "Release to students"}
-            </button>
+
+            {released ? (
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span className="chip" style={{ background: "#e1f0ea", color: "#0b4a39", fontWeight: 700, padding: "8px 14px" }}>
+                  ✓ Released to Students
+                </span>
+                <button
+                  type="button"
+                  className="btn o"
+                  style={{ padding: "6px 10px", fontSize: "12px", minHeight: "36px", color: "#666", borderColor: "#ccc" }}
+                  onClick={() => { unreleaseResults(); showToast("Results unreleased (hidden from students)"); }}
+                  title="Hide results from students"
+                >
+                  Unrelease
+                </button>
+              </div>
+            ) : (
+              <button
+                className="btn"
+                onClick={() => { releaseResults(); showToast("✓ Results and positions released to students!"); }}
+                style={{ background: "#0f5c47" }}
+              >
+                📢 Release to students
+              </button>
+            )}
           </div>
         </div>
+
+        {released && (
+          <div style={{ background: "#eef8f4", border: "1px solid #a3d9c7", borderRadius: "8px", padding: "10px 16px", marginBottom: "12px", fontSize: "14px", color: "#0b4a39" }}>
+            📢 <b>Results & Class Positions are Live:</b> Positions and report cards are currently visible to students on their portal.
+          </div>
+        )}
 
         {hasDrafts && (
           <div className="gs-unsaved-banner">
@@ -291,7 +552,7 @@ export default function SchoolResultsPage() {
                 <th className="gs-sticky gs-th-name" />
                 {subjects.map((sub) => (
                   <><th key={`${sub}-ca`} className="gs-sub-label">CA<span>/40</span></th>
-                  <th key={`${sub}-ex`} className="gs-sub-label">Exam<span>/60</span></th></>
+                    <th key={`${sub}-ex`} className="gs-sub-label">Exam<span>/60</span></th></>
                 ))}
                 <th /><th /><th /><th />
               </tr>
@@ -299,8 +560,8 @@ export default function SchoolResultsPage() {
             <tbody>
               {rows.map((row) => {
                 const scoredSubjects = row.scores.filter((sc) => sc.ca !== "" && sc.exam !== "");
-                const totalScore     = scoredSubjects.reduce((s, sc) => s + Number(sc.ca) + Number(sc.exam), 0);
-                const avg            = scoredSubjects.length ? Math.round(totalScore / scoredSubjects.length) : null;
+                const totalScore = scoredSubjects.reduce((s, sc) => s + Number(sc.ca) + Number(sc.exam), 0);
+                const avg = scoredSubjects.length ? Math.round(totalScore / scoredSubjects.length) : null;
                 return (
                   <tr key={row.id} className={row.ready ? "" : "gs-row-missing"}>
                     <td className="gs-sticky gs-td-name">
@@ -308,9 +569,9 @@ export default function SchoolResultsPage() {
                       {!row.ready && <div className="gs-missing-label">scores pending</div>}
                     </td>
                     {row.scores.map((sc) => {
-                      const caKey   = `${row.id}|${sc.subject}|ca`;
+                      const caKey = `${row.id}|${sc.subject}|ca`;
                       const examKey = `${row.id}|${sc.subject}|exam`;
-                      const caVal   = caKey in drafts   ? drafts[caKey]   : sc.ca;
+                      const caVal = caKey in drafts ? drafts[caKey] : sc.ca;
                       const examVal = examKey in drafts ? drafts[examKey] : sc.exam;
                       const subTotal = (caVal !== "" && examVal !== "") ? Number(caVal) + Number(examVal) : null;
                       return (
@@ -351,6 +612,20 @@ export default function SchoolResultsPage() {
                 );
               })}
             </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan={subjects.length * 2 + 5} style={{ padding: "12px 16px", background: "#f8faf9", borderTop: "1.5px solid #d8e1dc" }}>
+                  <button
+                    type="button"
+                    className="link-btn"
+                    onClick={() => setShowAddStudent(true)}
+                    style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "14px", fontWeight: 700 }}
+                  >
+                    ➕ Add another pupil to {selectedClass}
+                  </button>
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
 
@@ -363,6 +638,23 @@ export default function SchoolResultsPage() {
 
       {showCsv && (
         <CsvModal className={selectedClass} onImport={handleImport} onClose={() => setShowCsv(false)} />
+      )}
+
+      {showAddStudent && (
+        <AddStudentModal
+          defaultClass={selectedClass}
+          nextSuggestedId={nextSuggestedId}
+          onAdd={handleAddStudent}
+          onClose={() => setShowAddStudent(false)}
+        />
+      )}
+
+      {latestDispatch && (
+        <EmailDispatchModal dispatch={latestDispatch} onClose={clearLatestDispatch} />
+      )}
+
+      {showDispatchHistory && (
+        <DispatchHistoryModal dispatches={emailDispatches} onClose={() => setShowDispatchHistory(false)} />
       )}
     </div>
   );

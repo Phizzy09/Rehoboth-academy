@@ -15,11 +15,15 @@ const schoolLinks = [
   { name: "Fees ledger", page: "schoolFees" },
   { name: "Results", page: "schoolResults" },
   { name: "Broadcast", page: "broadcast" },
-  { name: "Admissions", page: "admissions" },
+  { name: "Applied Students", page: "schoolAdmissions" },
+];
+const teacherLinks = [
+  { name: "Grade Sheet & Scores", page: "schoolResults" },
+  { name: "Broadcast", page: "broadcast" },
 ];
 const chipStyle = { padding: "4px 12px", borderRadius: 99, background: "#e1f0ea", color: "#0b4a39", fontWeight: 600, fontSize: 14, whiteSpace: "nowrap" };
 
-// kind = "site", "student" or "school". active = the page that is open now.
+// kind = "site", "student", "teacher", or "school". active = the page that is open now.
 export default function Header({ kind, active }) {
   const setPage = useStore((state) => state.setPage);
   const logout = useStore((state) => state.logout);
@@ -42,14 +46,23 @@ export default function Header({ kind, active }) {
             </a>
           ))}
         </nav>
-        <a className="btn o" href="#" onClick={(e) => go(e, "login")}>Parent and student login</a>
+        <a className="btn o" href="#" onClick={(e) => go(e, "login")}>Portal sign in (Staff / Student)</a>
       </header>
     );
   }
 
-  const links = kind === "student" ? studentLinks : schoolLinks;
-  const me = students.find((s) => user && s.id === user.id);
-  const chipText = kind === "student" ? me.name + " · Student · view only" : "School ID · can edit";
+  // Determine role links & badges
+  let links = schoolLinks;
+  let chipText = "School ID · can edit";
+
+  if (user?.role === "teacher") {
+    links = teacherLinks;
+    chipText = `${user.name || "Teacher"} · Teacher (${user.id})`;
+  } else if (kind === "student" || user?.role === "student") {
+    links = studentLinks;
+    const me = students.find((s) => user && s.id === user.id);
+    chipText = (me?.name || "Student") + " · Student · view only";
+  }
 
   return (
     <header className="top">

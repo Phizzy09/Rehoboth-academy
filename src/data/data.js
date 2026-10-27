@@ -12,6 +12,11 @@ export const SUBJECTS = {
     "Civic Education", "Agricultural Science", "Christian Religious Studies",
     "Physical & Health Education", "Basic Technology",
   ],
+  "Primary 5": [
+    "Mathematics", "English Language", "Basic Science", "Social Studies",
+    "Civic Education", "Agricultural Science", "Christian Religious Studies",
+    "Physical & Health Education", "Basic Technology",
+  ],
   "JSS 1": [
     "Mathematics", "English Language", "Basic Science", "Social Studies",
     "Civic Education", "Agricultural Science", "Christian Religious Studies",
@@ -33,6 +38,13 @@ export const SUBJECTS = {
     "Agricultural Science", "Geography",
   ],
 };
+
+export const teachers = [
+  { id: "TCH-001", name: "Mrs. Ngozi Adeleke", subject: "Mathematics", className: "JSS 1", email: "n.adeleke@rehoboth.edu.ng" },
+  { id: "TCH-002", name: "Mr. Babatunde Alabi", subject: "English Language", className: "Primary 4", email: "b.alabi@rehoboth.edu.ng" },
+  { id: "TCH-003", name: "Dr. Emmanuel Okafor", subject: "Physics & Science", className: "SS 1", email: "e.okafor@rehoboth.edu.ng" },
+  { id: "TCH-004", name: "Mrs. Folashade Bello", subject: "Social Studies & Civic Ed", className: "JSS 2", email: "f.bello@rehoboth.edu.ng" },
+];
 
 export const students = [
   // Primary 4

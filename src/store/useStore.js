@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { students, results, reportInfo, notices, payments, initialApplications } from "../data/data";
+import { students, results, reportInfo, notices, payments, initialApplications, teachers } from "../data/data";
 
 const loadApplications = () => {
   try {
@@ -28,35 +28,68 @@ const tuitionByClass = {
   "SS 2": 145000,
 };
 
+// Auto-generate next Student ID
+export const getNextStudentId = (studentsList) => {
+  const existingNums = studentsList
+    .map((s) => {
+      const m = s.id?.match(/STU-(\d+)/);
+      return m ? parseInt(m[1], 10) : 0;
+    })
+    .filter((n) => !isNaN(n));
+  const nextNum = existingNums.length ? Math.max(...existingNums) + 1 : 14;
+  return `STU-${String(nextNum).padStart(3, "0")}`;
+};
+
 // One store = one place that remembers everything the website needs.
 const useStore = create((set, get) => ({
   // ---- things we remember ----
   page: "home",
-  user: null, // { role: "school" or "student", id: "STU-001" }
+  user: null, // { role: "school" | "teacher" | "student", id: "SCH-001" }
   loginError: "",
   students: students,
+  teachers: teachers,
   results: results,
   reportInfo: reportInfo,
   notices: notices,
   payments: payments,
   parents: [],
   applications: loadApplications(),
+  emailDispatches: [],
+  latestDispatch: null, // Used for displaying instant credential dispatch alert
   released: false, // students see results only after the school releases them
 
   // ---- things we can do ----
   setPage: (page) => set({ page: page }),
+  clearLatestDispatch: () => set({ latestDispatch: null }),
 
   login: (id, password) =>
     set((state) => {
       const upperId = id.trim().toUpperCase();
-      if (password !== "1234") return { loginError: "Wrong ID or password" };
+      if (password !== "1234") return { loginError: "Wrong ID or password (default PIN is 1234)" };
+
+      // 1. School Admin (SCH-...)
       if (upperId.startsWith("SCH")) {
-        return { user: { role: "school", id: upperId }, page: "schoolFees", loginError: "" };
+        return { user: { role: "school", id: upperId, name: "School Administrator" }, page: "schoolFees", loginError: "" };
       }
-      if (state.students.find((s) => s.id === upperId)) {
-        return { user: { role: "student", id: upperId }, page: "studentFees", loginError: "" };
+
+      // 2. Teachers (TCH-...)
+      const matchedTeacher = state.teachers.find((t) => t.id === upperId);
+      if (matchedTeacher || upperId.startsWith("TCH")) {
+        const teacherObj = matchedTeacher || { id: upperId, name: "Teacher", subject: "All Subjects", className: "All Classes" };
+        return {
+          user: { role: "teacher", id: upperId, name: teacherObj.name, subject: teacherObj.subject, className: teacherObj.className },
+          page: "schoolResults",
+          loginError: "",
+        };
       }
-      return { loginError: "Wrong ID or password" };
+
+      // 3. Students (STU-...)
+      const student = state.students.find((s) => s.id === upperId);
+      if (student) {
+        return { user: { role: "student", id: upperId, name: student.name }, page: "studentFees", loginError: "" };
+      }
+
+      return { loginError: "Wrong ID or password. Use SCH-001, TCH-001, or STU-001" };
     }),
 
   logout: () => set({ user: null, page: "home" }),
@@ -111,7 +144,12 @@ const useStore = create((set, get) => ({
   pay: (id, amount) =>
     set((state) => {
       const student = state.students.find((s) => s.id === id);
-      const newPaid = student.paid + amount;
+      if (!student) return {};
+      const remainingOwing = Math.max(0, student.charged - student.paid);
+      if (remainingOwing <= 0) return {}; // Already paid in full
+      const paymentAmount = Math.min(amount, remainingOwing);
+      if (paymentAmount <= 0) return {};
+      const newPaid = student.paid + paymentAmount;
       const date = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" });
       return {
         students: state.students.map((s) =>
@@ -119,7 +157,7 @@ const useStore = create((set, get) => ({
         ),
         payments: [
           ...state.payments,
-          { id: Date.now(), studentId: id, date, method: "Transfer", amount },
+          { id: Date.now(), studentId: id, date, method: "Transfer", amount: paymentAmount },
         ],
       };
     }),
@@ -166,7 +204,74 @@ const useStore = create((set, get) => ({
       return { results };
     }),
 
-  releaseResults: () => set({ released: true }),
+  releaseResults: () =>
+    set((state) => {
+      const notice = {
+        id: Date.now(),
+        tag: "Results",
+        title: "First term results are ready",
+        text: "Official report cards and class positions have been released by the school.",
+        button: "View",
+        goto: "studentResults",
+        channels: "WhatsApp, SMS",
+      };
+      return {
+        released: true,
+        notices: [notice, ...state.notices.filter((n) => n.title !== "First term results are ready")],
+      };
+    }),
+  unreleaseResults: () => set({ released: false }),
+
+  addStudent: (data) =>
+    set((state) => {
+      // Auto-generate next Student ID strictly
+      const newId = getNextStudentId(state.students);
+
+      const tuition = tuitionByClass[data.className] || 100000;
+      const items = data.items || [
+        { name: "Tuition", charged: tuition },
+        { name: "Books & Supplies", charged: 25000 },
+        { name: "Development Levy", charged: 10000 },
+        { name: "ICT Fee", charged: 8000 },
+      ];
+      const charged = data.charged !== undefined ? data.charged : items.reduce((sum, it) => sum + it.charged, 0);
+      const studentNum = parseInt(newId.replace(/\D/g, ""), 10) || 50;
+      const account = data.account || `992001${1100 + studentNum}`;
+      const email = data.email || (data.name ? `${data.name.toLowerCase().replace(/[^a-z]/g, "")}@gmail.com` : `${newId.toLowerCase()}@rehoboth.edu.ng`);
+
+      const newStudent = {
+        id: newId,
+        name: data.name,
+        className: data.className,
+        email,
+        phone: data.phone || "08030000000",
+        account,
+        charged,
+        paid: data.paid || 0,
+        items,
+        ...data,
+      };
+
+      // Dispatched email notification to student/parent
+      const emailDispatch = {
+        id: Date.now(),
+        timestamp: new Date().toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+        studentName: newStudent.name,
+        studentId: newId,
+        email: newStudent.email,
+        defaultPassword: "1234",
+        className: newStudent.className,
+        subject: `Welcome to Rehoboth Academy! Your Student ID & Portal Login Credentials (${newId})`,
+        status: "Sent & Delivered",
+      };
+
+      return {
+        students: [...state.students, newStudent],
+        emailDispatches: [emailDispatch, ...(state.emailDispatches || [])],
+        latestDispatch: emailDispatch,
+      };
+    }),
+
   addNotice: (notice) => set((state) => ({ notices: [notice, ...state.notices] })),
   addParent: (parent) => set((state) => ({ parents: [...state.parents, parent] })),
 
@@ -266,10 +371,26 @@ const useStore = create((set, get) => ({
         channels: "WhatsApp, SMS",
       };
 
+      // Dispatched email notification to student/parent
+      const emailRecipient = app.email || (app.childName ? `${app.childName.toLowerCase().replace(/[^a-z]/g, "")}@gmail.com` : `${newId.toLowerCase()}@rehoboth.edu.ng`);
+      const emailDispatch = {
+        id: Date.now(),
+        timestamp: new Date().toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+        studentName: app.childName,
+        studentId: newId,
+        email: emailRecipient,
+        defaultPassword: "1234",
+        className: app.className,
+        subject: `Welcome to Rehoboth Academy! Your Student ID & Portal Login Credentials (${newId})`,
+        status: "Sent & Delivered",
+      };
+
       return {
         students: [...state.students, newStudent],
         applications: updatedApps,
         notices: [welcomeNotice, ...state.notices],
+        emailDispatches: [emailDispatch, ...(state.emailDispatches || [])],
+        latestDispatch: emailDispatch,
       };
     }),
 }));

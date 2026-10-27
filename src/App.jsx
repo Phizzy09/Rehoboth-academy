@@ -11,6 +11,7 @@ import StudentNoticesPage from "./pages/StudentNoticesPage";
 import SchoolFeesPage from "./pages/SchoolFeesPage";
 import SchoolResultsPage from "./pages/SchoolResultsPage";
 import BroadcastPage from "./pages/BroadcastPage";
+import SchoolAdmissionsPage from "./pages/SchoolAdmissionsPage";
 
 // Each page name points to one page file.
 const pages = {
@@ -25,10 +26,11 @@ const pages = {
   schoolFees: SchoolFeesPage,
   schoolResults: SchoolResultsPage,
   broadcast: BroadcastPage,
+  schoolAdmissions: SchoolAdmissionsPage,
 };
 
 const studentPages = ["studentFees", "studentResults", "studentNotices"];
-const schoolPages = ["schoolFees", "schoolResults", "broadcast"];
+const schoolPages = ["schoolFees", "schoolResults", "broadcast", "schoolAdmissions"];
 
 export default function App() {
   const page = useStore((state) => state.page);
@@ -38,7 +40,16 @@ export default function App() {
   let Page = pages[page];
   // Not signed in with the right ID? Send them to the login page.
   if (studentPages.includes(page) && (!user || user.role !== "student")) Page = LoginPage;
-  if (schoolPages.includes(page) && (!user || user.role !== "school")) Page = LoginPage;
+  if (schoolPages.includes(page)) {
+    if (!user) {
+      Page = LoginPage;
+    } else if (user.role === "teacher") {
+      // Teachers can access results and broadcast; redirect fees & admissions to results
+      if (page === "schoolFees" || page === "schoolAdmissions") Page = SchoolResultsPage;
+    } else if (user.role !== "school") {
+      Page = LoginPage;
+    }
+  }
 
   // key={page} makes the page animate in again every time it changes
   return (

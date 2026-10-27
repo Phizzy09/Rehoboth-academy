@@ -6,7 +6,13 @@ export const gradeClass = (total) => (total >= 60 ? "tag g" : "tag a");
 // chip-based version for school admin pages
 export const chipGradeClass = (total) => (total >= 60 ? "chip" : "chip a");
 
-export const ordinal = (n) => (n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : n + "th");
+export const ordinal = (n) => {
+  if (!n || isNaN(n)) return "—";
+  const num = Number(n);
+  const s = ["th", "st", "nd", "rd"];
+  const v = num % 100;
+  return num + (s[(v - 20) % 10] || s[v] || s[0]);
+};
 
 // Share a student's payments across their fee items, oldest first.
 export function splitPayment(items, paid) {
