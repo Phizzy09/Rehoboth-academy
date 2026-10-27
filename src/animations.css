@@ -1,0 +1,43 @@
+/* All the website animations live in this one file. */
+
+/* 1. Every page fades and slides in when you open it */
+@keyframes pageIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.page-enter { animation: pageIn 0.45s ease-out; }
+
+/* 2. Cards appear as you scroll down (the class is added by useScrollReveal.js) */
+.pg .card.js-reveal { opacity: 0; transform: translateY(26px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.pg .card.js-reveal.in-view { opacity: 1; transform: none; }
+
+/* 3. Cards lift when you hover over them */
+.pg .card { transition: box-shadow 0.25s ease, transform 0.25s ease; }
+.pg .card.js-reveal.in-view:hover { transform: translateY(-4px); box-shadow: 0 14px 28px rgba(15, 92, 71, 0.14); }
+
+/* 4. Buttons and links react to the mouse */
+.pg .btn { transition: transform 0.15s ease, box-shadow 0.2s ease; }
+.pg .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(15, 92, 71, 0.22); }
+.pg .btn:active { transform: scale(0.97); }
+.pg .top a { transition: background 0.2s ease, color 0.2s ease; }
+.pg tbody tr { transition: background 0.2s ease; }
+.pg tbody tr:hover { background: #f1f5f3; }
+
+/* 5. Progress bars fill up from empty */
+@keyframes grow { from { width: 0; } }
+.pg .bar i { animation: grow 1s ease-out; transition: width 0.8s ease; }
+
+/* 6. Home page hero: the text comes in one piece at a time, the photo floats */
+@keyframes rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.p-Home .in h1 { animation: rise 0.7s ease-out both; }
+.p-Home .in h1 + p { animation: rise 0.7s 0.15s ease-out both; }
+.p-Home .in h1 + p + div { animation: rise 0.7s 0.3s ease-out both; }
+.p-Home .ph { animation: float 6s ease-in-out infinite; }
+
+/* 7. Login page: the green side slowly shifts colour */
+@keyframes drift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+.p-Login .l { background: linear-gradient(135deg, #0f5c47, #1b8466, #0f5c47); background-size: 200% 200%; animation: drift 12s ease infinite; }
+
+/* Respect people who turn animations off on their device */
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+  .pg .card.js-reveal { opacity: 1; transform: none; }
+}
