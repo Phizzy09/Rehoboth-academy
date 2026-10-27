@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useStore from "../store/useStore";
 import FirebaseStatusModal from "./FirebaseStatusModal";
 
@@ -23,9 +23,7 @@ const teacherLinks = [
   { name: "Grade Sheet & Scores", page: "schoolResults" },
   { name: "Broadcast", page: "broadcast" },
 ];
-const chipStyle = { padding: "4px 12px", borderRadius: 99, background: "#e1f0ea", color: "#0b4a39", fontWeight: 600, fontSize: 14, whiteSpace: "nowrap" };
 
-// kind = "site", "student", "teacher", or "school". active = the page that is open now.
 export default function Header({ kind, active }) {
   const setPage = useStore((state) => state.setPage);
   const logout = useStore((state) => state.logout);
@@ -33,115 +31,225 @@ export default function Header({ kind, active }) {
   const students = useStore((state) => state.students);
   const firebaseStatus = useStore((state) => state.firebaseStatus);
   const [showFirebaseModal, setShowFirebaseModal] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Close menu on ESC key press
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Prevent background scroll when mobile menu is open
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [menuOpen]);
 
   const go = (e, page) => {
     e.preventDefault();
+    setMenuOpen(false);
     if (page) setPage(page);
   };
 
-  if (kind === "site") {
-    return (
-      <header className="top">
-        <span className="brand">Rehoboth Academy</span>
-        <nav>
-          {siteLinks.map((link) => (
-            <a key={link.name} className={active === link.page ? "l on" : "l"} href="#" onClick={(e) => go(e, link.page)}>
+  const handleLogout = (e) => {
+    e.preventDefault();
+    setMenuOpen(false);
+    logout();
+  };
+
+  // Determine role links & badges
+  let links = siteLinks;
+  let chipText = "";
+
+  if (kind !== "site") {
+    if (user?.role === "teacher") {
+      links = teacherLinks;
+      chipText = `${user.name || "Teacher"} · Teacher (${user.id})`;
+    } else if (kind === "student" || user?.role === "student") {
+      links = studentLinks;
+      const me = students.find((s) => user && s.id === user.id);
+      chipText = `${me?.name || "Student"} · Student`;
+    } else {
+      links = schoolLinks;
+      chipText = "School Administrator";
+    }
+  }
+
+  const renderFirebaseBadge = (isMobile = false) => (
+    <button
+      type="button"
+      onClick={() => {
+        setMenuOpen(false);
+        setShowFirebaseModal(true);
+      }}
+      title="Click to check Firebase Cloud connection & rules"
+      className="firebase-status-btn"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: isMobile ? "center" : "flex-start",
+        gap: "6px",
+        fontSize: "12.5px",
+        fontWeight: 700,
+        padding: isMobile ? "8px 14px" : "4px 10px",
+        borderRadius: "99px",
+        background: firebaseStatus === "connected" ? "#f0fdf4" : firebaseStatus === "permission-denied" ? "#fef2f2" : "#fff7ed",
+        color: firebaseStatus === "connected" ? "#16a34a" : firebaseStatus === "permission-denied" ? "#dc2626" : "#ea580c",
+        border: `1px solid ${firebaseStatus === "connected" ? "#86efac" : firebaseStatus === "permission-denied" ? "#fca5a5" : "#fed7aa"}`,
+        cursor: "pointer",
+        width: isMobile ? "100%" : "auto",
+      }}
+    >
+      <span
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: "50%",
+          background: firebaseStatus === "connected" ? "#16a34a" : firebaseStatus === "permission-denied" ? "#dc2626" : "#ea580c",
+          flexShrink: 0,
+        }}
+      />
+      {firebaseStatus === "connected" ? "✓ Firebase Live" : firebaseStatus === "permission-denied" ? "⚠️ Firebase Blocked" : "🔥 Firebase"}
+    </button>
+  );
+
+  return (
+    <>
+      <header className="top modern-header">
+        {/* Brand */}
+        <a
+          href="#"
+          className="brand"
+          onClick={(e) => go(e, kind === "site" ? "home" : links[0]?.page || "home")}
+          style={{ textDecoration: "none" }}
+        >
+          Rehoboth Academy
+        </a>
+
+        {/* Desktop Nav */}
+        <nav className="nav-desktop">
+          {links.map((link) => (
+            <a
+              key={link.name || link.page}
+              className={active === link.page ? "l on" : "l"}
+              href="#"
+              onClick={(e) => go(e, link.page)}
+            >
               {link.name}
             </a>
           ))}
         </nav>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <button
-            type="button"
-            onClick={() => setShowFirebaseModal(true)}
-            title="Click to check Firebase Cloud connection & rules"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "5px",
-              fontSize: "12px",
-              fontWeight: 700,
-              padding: "4px 10px",
-              borderRadius: "99px",
-              background: firebaseStatus === "connected" ? "#f0fdf4" : firebaseStatus === "permission-denied" ? "#fef2f2" : "#fff7ed",
-              color: firebaseStatus === "connected" ? "#16a34a" : firebaseStatus === "permission-denied" ? "#dc2626" : "#ea580c",
-              border: `1px solid ${firebaseStatus === "connected" ? "#86efac" : firebaseStatus === "permission-denied" ? "#fca5a5" : "#fed7aa"}`,
-              cursor: "pointer",
-            }}
-          >
-            <span
-              style={{
-                width: 7,
-                height: 7,
-                borderRadius: "50%",
-                background: firebaseStatus === "connected" ? "#16a34a" : firebaseStatus === "permission-denied" ? "#dc2626" : "#ea580c",
-              }}
-            />
-            {firebaseStatus === "connected" ? "✓ Firebase Live" : firebaseStatus === "permission-denied" ? "⚠️ Firebase Blocked" : "🔥 Firebase"}
-          </button>
-          <a className="btn o" href="#" onClick={(e) => go(e, "login")}>Portal sign in (Staff / Student)</a>
+
+        {/* Desktop Actions */}
+        <div className="header-actions-desktop">
+          {renderFirebaseBadge(false)}
+
+          {chipText && (
+            <span className="header-chip" title={chipText}>
+              {chipText}
+            </span>
+          )}
+
+          {kind === "site" ? (
+            <a className="btn o" href="#" onClick={(e) => go(e, "login")}>
+              Portal sign in
+            </a>
+          ) : (
+            <a className="btn o" href="#" onClick={handleLogout}>
+              Log out
+            </a>
+          )}
         </div>
-        {showFirebaseModal && <FirebaseStatusModal onClose={() => setShowFirebaseModal(false)} />}
-      </header>
-    );
-  }
 
-  // Determine role links & badges
-  let links = schoolLinks;
-  let chipText = "School ID · can edit";
-
-  if (user?.role === "teacher") {
-    links = teacherLinks;
-    chipText = `${user.name || "Teacher"} · Teacher (${user.id})`;
-  } else if (kind === "student" || user?.role === "student") {
-    links = studentLinks;
-    const me = students.find((s) => user && s.id === user.id);
-    chipText = (me?.name || "Student") + " · Student · view only";
-  }
-
-  return (
-    <header className="top">
-      <span className="brand">Rehoboth Academy</span>
-      <nav>
-        {links.map((link) => (
-          <a key={link.page} className={active === link.page ? "on" : ""} href="#" onClick={(e) => go(e, link.page)}>
-            {link.name}
-          </a>
-        ))}
-      </nav>
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        {/* Mobile Hamburger Button */}
         <button
           type="button"
-          onClick={() => setShowFirebaseModal(true)}
-          title="Click to check Firebase Cloud connection & rules"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "5px",
-            fontSize: "12px",
-            fontWeight: 700,
-            padding: "4px 10px",
-            borderRadius: "99px",
-            background: firebaseStatus === "connected" ? "#f0fdf4" : firebaseStatus === "permission-denied" ? "#fef2f2" : "#fff7ed",
-            color: firebaseStatus === "connected" ? "#16a34a" : firebaseStatus === "permission-denied" ? "#dc2626" : "#ea580c",
-            border: `1px solid ${firebaseStatus === "connected" ? "#86efac" : firebaseStatus === "permission-denied" ? "#fca5a5" : "#fed7aa"}`,
-            cursor: "pointer",
-          }}
+          className={`hamburger-btn ${menuOpen ? "open" : ""}`}
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={menuOpen}
         >
-          <span
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: "50%",
-              background: firebaseStatus === "connected" ? "#16a34a" : firebaseStatus === "permission-denied" ? "#dc2626" : "#ea580c",
-            }}
-          />
-          {firebaseStatus === "connected" ? "✓ Firebase Live" : firebaseStatus === "permission-denied" ? "⚠️ Firebase Blocked" : "🔥 Firebase"}
+          <span className="hamburger-line top-line" />
+          <span className="hamburger-line mid-line" />
+          <span className="hamburger-line bot-line" />
         </button>
-        <span style={chipStyle}>{chipText}</span>
+      </header>
+
+      {/* Mobile Drawer Navigation */}
+      <div className={`mobile-nav-drawer ${menuOpen ? "open" : ""}`}>
+        <div
+          className="mobile-nav-backdrop"
+          onClick={() => setMenuOpen(false)}
+          aria-hidden="true"
+        />
+        <div className="mobile-nav-panel">
+          <div className="mobile-nav-header">
+            <div>
+              <span className="mobile-nav-brand">Rehoboth Academy</span>
+              {chipText && <div className="mobile-role-text">{chipText}</div>}
+            </div>
+            <button
+              type="button"
+              className="mobile-close-btn"
+              onClick={() => setMenuOpen(false)}
+              aria-label="Close menu"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="mobile-nav-links">
+            {links.map((link) => (
+              <a
+                key={link.name || link.page}
+                className={`mobile-nav-link ${active === link.page ? "active" : ""}`}
+                href="#"
+                onClick={(e) => go(e, link.page)}
+              >
+                <span>{link.name}</span>
+                {active === link.page && <span className="active-dot">•</span>}
+              </a>
+            ))}
+          </div>
+
+          <div className="mobile-nav-footer">
+            <div style={{ marginBottom: "12px" }}>
+              {renderFirebaseBadge(true)}
+            </div>
+
+            {kind === "site" ? (
+              <a
+                className="btn"
+                href="#"
+                style={{ width: "100%", textAlign: "center", display: "flex", justifyContent: "center" }}
+                onClick={(e) => go(e, "login")}
+              >
+                Portal sign in (Staff / Student)
+              </a>
+            ) : (
+              <button
+                type="button"
+                className="btn o"
+                style={{ width: "100%", justifyContent: "center" }}
+                onClick={handleLogout}
+              >
+                Log out
+              </button>
+            )}
+          </div>
+        </div>
       </div>
-      <a className="btn o" href="#" onClick={(e) => { e.preventDefault(); logout(); }}>Log out</a>
+
       {showFirebaseModal && <FirebaseStatusModal onClose={() => setShowFirebaseModal(false)} />}
-    </header>
+    </>
   );
 }

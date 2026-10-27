@@ -429,6 +429,8 @@ Admissions Committee, Rehoboth Academy`,
       const welcomeNotice = {
         id: Date.now(),
         tag: "Admissions",
+        studentId: newId,
+        targetRole: "school",
         title: `Welcome ${app.childName} (${newId})`,
         text: `${app.childName} has been admitted to ${app.className}. Student portal credentials have been generated.`,
         button: "View Fees",

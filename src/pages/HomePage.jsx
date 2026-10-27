@@ -17,10 +17,10 @@ export default function HomePage() {
   return (
     <div className="pg p-Home">
       <Header kind="site" active="home" />
-      <section className="in" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))", gap: "40px", alignItems: "center" }}>
+      <section className="in hero-section" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "32px", alignItems: "center" }}>
         <div>
-          <h1 style={{ fontSize: "52px", lineHeight: "1.1" }}>A private school in Ilorin, with nothing left to chase.</h1>
-          <p className="m" style={{ fontSize: "19px", margin: "18px 0 26px" }}>
+          <h1 className="responsive-hero-h1" style={{ fontSize: "52px", lineHeight: "1.1" }}>A private school in Ilorin, with nothing left to chase.</h1>
+          <p className="m" style={{ fontSize: "18px", margin: "16px 0 24px" }}>
             Rehoboth Academy teaches nursery, primary and secondary students. Parents pay fees, read results and get school news in one place.
           </p>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>

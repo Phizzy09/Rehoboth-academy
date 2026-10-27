@@ -11,24 +11,48 @@ export default function BroadcastPage() {
   const addParent = useStore((state) => state.addParent);
   const [text, setText] = useState("Second term resumes on 11 January 2027.");
   const [channels, setChannels] = useState(["WhatsApp"]);
+  const [sendTo, setSendTo] = useState("all");
+  const [targetClass, setTargetClass] = useState("Primary 4");
   const [parent, setParent] = useState(emptyParent);
+  const [toast, setToast] = useState("");
   const recent = notices.slice(0, 4);
 
   const toggleChannel = (c) => {
     if (channels.includes(c)) setChannels(channels.filter((x) => x !== c));
     else setChannels([...channels, c]);
   };
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(""), 3500);
+  };
+
   const send = () => {
-    addNotice({ id: Date.now(), tag: "Broadcast", title: text.slice(0, 40), text: text, channels: channels.join(", "), button: null, goto: null });
+    if (!text.trim()) return;
+    const tag = sendTo === "owing" ? "Fees" : "Broadcast";
+    addNotice({
+      id: Date.now(),
+      tag,
+      title: text.slice(0, 40),
+      text: text,
+      channels: channels.join(", "),
+      target: sendTo, // "all" | "class" | "owing"
+      targetClass: sendTo === "class" ? targetClass : "All",
+      button: null,
+      goto: null,
+    });
+    showToast("✓ Broadcast dispatched successfully!");
     setText("");
   };
   const saveParent = () => {
     addParent(parent);
     setParent(emptyParent);
+    showToast("✓ Parent contact saved");
   };
   return (
     <div className="pg p-Broadcast">
       <Header kind="school" active="broadcast" />
+      {toast && <div className="toast">{toast}</div>}
       <div className="wrap">
         <div>
           <div className="hd">
@@ -36,14 +60,30 @@ export default function BroadcastPage() {
             <a className="btn o" href="#parents">Add parent details</a>
           </div>
           <div className="card" style={{ marginTop: "16px" }}>
-            <label>
-              Send to
-              <select>
-                <option>All students and parents</option>
-                <option>One class</option>
-                <option>Students who owe fees</option>
-              </select>
-            </label>
+            <div style={{ display: "grid", gridTemplateColumns: sendTo === "class" ? "1fr 1fr" : "1fr", gap: "12px" }}>
+              <label>
+                Send to
+                <select value={sendTo} onChange={(e) => setSendTo(e.target.value)}>
+                  <option value="all">All students and parents</option>
+                  <option value="class">One specific class</option>
+                  <option value="owing">Students who owe fees only</option>
+                </select>
+              </label>
+
+              {sendTo === "class" && (
+                <label>
+                  Select Class
+                  <select value={targetClass} onChange={(e) => setTargetClass(e.target.value)}>
+                    <option value="Primary 4">Primary 4</option>
+                    <option value="Primary 5">Primary 5</option>
+                    <option value="JSS 1">JSS 1</option>
+                    <option value="JSS 2">JSS 2</option>
+                    <option value="SS 1">SS 1</option>
+                    <option value="SS 2">SS 2</option>
+                  </select>
+                </label>
+              )}
+            </div>
             <fieldset style={{ border: "0", padding: "0", margin: "14px 0 0" }}>
               <legend style={{ fontWeight: "600", marginBottom: "4px" }}>Send through</legend>
               <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>

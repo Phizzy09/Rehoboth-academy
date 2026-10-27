@@ -312,7 +312,23 @@ export default function SchoolAdmissionsPage() {
                   {filteredApplicants.map((app) => (
                     <tr key={app.id}>
                       <td style={{ fontWeight: 700, fontSize: "13px", color: "#0f5c47" }}>
-                        {app.id}
+                        <div>{app.id}</div>
+                        <div style={{ marginTop: "3px" }}>
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: 700,
+                              padding: "2px 7px",
+                              borderRadius: "99px",
+                              background: app.feePaid !== false ? "#dcfce7" : "#fee2e2",
+                              color: app.feePaid !== false ? "#15803d" : "#b91c1c",
+                              border: `1px solid ${app.feePaid !== false ? "#86efac" : "#fca5a5"}`,
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {app.feePaid !== false ? "✓ Fee Paid" : "Fee Unpaid"}
+                          </span>
+                        </div>
                       </td>
                       <td style={{ fontSize: "13px", color: "#64748b", whiteSpace: "nowrap" }}>
                         {app.date}
@@ -457,6 +473,14 @@ export default function SchoolAdmissionsPage() {
               <div>
                 <div style={{ color: "#4a5d55", fontWeight: 600 }}>Emergency Contact</div>
                 <div style={{ fontWeight: 600 }}>{selectedApplicant.emergencyContact || "Same as parent"}</div>
+              </div>
+              <div>
+                <div style={{ color: "#4a5d55", fontWeight: 600 }}>Application Fee (₦5,000)</div>
+                <div style={{ fontWeight: 700, color: selectedApplicant.feePaid !== false ? "#15803d" : "#b91c1c" }}>
+                  {selectedApplicant.feePaid !== false
+                    ? `✓ Paid (Ref: ${selectedApplicant.feeRef || "Verified"})`
+                    : "⚠️ Not Paid"}
+                </div>
               </div>
               <div>
                 <div style={{ color: "#4a5d55", fontWeight: 600 }}>Medical Information</div>

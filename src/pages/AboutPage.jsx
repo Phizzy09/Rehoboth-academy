@@ -16,7 +16,7 @@ export default function AboutPage() {
     <div className="pg p-Home">
       <Header kind="site" active="about" />
       <section className="in">
-        <h1 style={{ fontSize: "44px" }}>About Rehoboth Academy</h1>
+        <h1 className="responsive-h1" style={{ fontSize: "44px" }}>About Rehoboth Academy</h1>
         <p className="m" style={{ fontSize: "19px", maxWidth: "640px", margin: "14px 0 32px" }}>
           Rehoboth Academy is a private school in Ilorin, Kwara State. We teach nursery, primary and secondary students.
           Parents pay fees, read results and get school news in one place, so nothing is left to chase.

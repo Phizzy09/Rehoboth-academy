@@ -13,9 +13,9 @@ export default function ContactPage() {
   return (
     <div className="pg p-Home">
       <Header kind="site" active="contact" />
-      <section className="in" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "40px" }}>
+      <section className="in" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "32px" }}>
         <div>
-          <h1 style={{ fontSize: "44px" }}>Contact us</h1>
+          <h1 className="responsive-h1" style={{ fontSize: "44px" }}>Contact us</h1>
           <p className="m" style={{ margin: "10px 0 24px" }}>Call, email or visit the school office.</p>
           <div className="card">
             <p style={{ margin: "0 0 10px" }}><b>Address</b><br />14 School Road, Ilorin, Kwara State</p>

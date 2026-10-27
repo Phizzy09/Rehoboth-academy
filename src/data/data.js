@@ -221,7 +221,7 @@ export const payments = [
 ];
 
 export const notices = [
-  { id: 1, tag: "Fees",       title: "Second instalment due 30 Oct",          text: "Ifeoma Okon owes ₦63,000.",                              button: "Pay now", goto: "studentFees",    channels: "WhatsApp, SMS" },
+  { id: 1, tag: "Fees",       title: "Second instalment due 30 Oct",          text: "Outstanding termly fees should be paid before 30 October.", button: "Pay now", goto: "studentFees",    channels: "WhatsApp, SMS" },
   { id: 2, tag: "Results",    title: "First term results are ready",           text: "View or download the report card for each child.",        button: "View",     goto: "studentResults", channels: "WhatsApp" },
   { id: 3, tag: "Term dates", title: "Second term resumes Monday 11 Jan 2027", text: "School fees for the new term will appear here before resumption.", button: null, goto: null, channels: "WhatsApp" },
 ];
