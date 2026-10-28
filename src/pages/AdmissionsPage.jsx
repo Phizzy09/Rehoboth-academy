@@ -540,7 +540,7 @@ export default function AdmissionsPage() {
                         flexShrink: 0,
                       }}
                       onSuccess={handlePaystackSuccess}
-                      onClose={() => {}}
+                      onClose={() => { }}
                     />
                   </div>
 

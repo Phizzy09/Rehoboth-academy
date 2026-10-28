@@ -131,9 +131,7 @@ html, body {
 
 /* ── Modern Header Structure ── */
 .top.modern-header {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
+  position: static;
   background: #ffffff;
   border-bottom: 1px solid #d8e1dc;
   display: flex;

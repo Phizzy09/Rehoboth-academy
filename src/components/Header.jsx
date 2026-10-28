@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import useStore from "../store/useStore";
-import FirebaseStatusModal from "./FirebaseStatusModal";
 
 const siteLinks = [
   { name: "Home", page: "home" },
@@ -29,8 +28,6 @@ export default function Header({ kind, active }) {
   const logout = useStore((state) => state.logout);
   const user = useStore((state) => state.user);
   const students = useStore((state) => state.students);
-  const firebaseStatus = useStore((state) => state.firebaseStatus);
-  const [showFirebaseModal, setShowFirebaseModal] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   // Close menu on ESC key press
@@ -84,44 +81,6 @@ export default function Header({ kind, active }) {
     }
   }
 
-  const renderFirebaseBadge = (isMobile = false) => (
-    <button
-      type="button"
-      onClick={() => {
-        setMenuOpen(false);
-        setShowFirebaseModal(true);
-      }}
-      title="Click to check Firebase Cloud connection & rules"
-      className="firebase-status-btn"
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: isMobile ? "center" : "flex-start",
-        gap: "6px",
-        fontSize: "12.5px",
-        fontWeight: 700,
-        padding: isMobile ? "8px 14px" : "4px 10px",
-        borderRadius: "99px",
-        background: firebaseStatus === "connected" ? "#f0fdf4" : firebaseStatus === "permission-denied" ? "#fef2f2" : "#fff7ed",
-        color: firebaseStatus === "connected" ? "#16a34a" : firebaseStatus === "permission-denied" ? "#dc2626" : "#ea580c",
-        border: `1px solid ${firebaseStatus === "connected" ? "#86efac" : firebaseStatus === "permission-denied" ? "#fca5a5" : "#fed7aa"}`,
-        cursor: "pointer",
-        width: isMobile ? "100%" : "auto",
-      }}
-    >
-      <span
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: "50%",
-          background: firebaseStatus === "connected" ? "#16a34a" : firebaseStatus === "permission-denied" ? "#dc2626" : "#ea580c",
-          flexShrink: 0,
-        }}
-      />
-      {firebaseStatus === "connected" ? "✓ Firebase Live" : firebaseStatus === "permission-denied" ? "⚠️ Firebase Blocked" : "🔥 Firebase"}
-    </button>
-  );
-
   return (
     <>
       <header className="top modern-header">
@@ -151,8 +110,6 @@ export default function Header({ kind, active }) {
 
         {/* Desktop Actions */}
         <div className="header-actions-desktop">
-          {renderFirebaseBadge(false)}
-
           {chipText && (
             <span className="header-chip" title={chipText}>
               {chipText}
@@ -222,10 +179,6 @@ export default function Header({ kind, active }) {
           </div>
 
           <div className="mobile-nav-footer">
-            <div style={{ marginBottom: "12px" }}>
-              {renderFirebaseBadge(true)}
-            </div>
-
             {kind === "site" ? (
               <a
                 className="btn"
@@ -248,8 +201,6 @@ export default function Header({ kind, active }) {
           </div>
         </div>
       </div>
-
-      {showFirebaseModal && <FirebaseStatusModal onClose={() => setShowFirebaseModal(false)} />}
     </>
   );
 }
